@@ -926,7 +926,7 @@ def render() -> str:
     mem = resources['memory']
     disk = resources['disk']
     err_cls = 'o' if total_errors else 'g'
-    # Cron pill summaries
+    # Cron pill summaries (Russian names)
     cron_pills = []
     for j in cron_rows:
         if j.get('enabled') != 'да':
@@ -935,17 +935,22 @@ def render() -> str:
         sched = j.get('schedule', '')
         is_err = j.get('status', '') == 'ошибка'
         dot = 'r' if is_err else 'g'
-        # Shorten common names
-        name = name.replace('WoopSocial Pinterest delivery status watcher', 'Pinterest статус')
-        name = name.replace('S002 Junk Journal Vault WoopSocial status watcher', 'Junk Journal')
-        name = name.replace('S004 Planner Printable Studio WoopSocial status watcher', 'Planner Printable')
-        name = name.replace('S005 SVG Craft Cut Studio WoopSocial status watcher', 'SVG Craft')
-        name = name.replace('S006 StitchVault Studio WoopSocial status watcher — every 6h', 'StitchVault')
-        name = name.replace('wibes-daily-download', 'Wibes загрузка')
-        name = name.replace('wibes-morning-report', 'Wibes отчёт')
-        name = name.replace('wibes-scheduler', 'Wibes планировщик')
-        name = name.replace('daily-unicaizer-seo-3-articles', 'SEO Unicaizer')
-        cron_pills.append('<span class="pill"><span class="d ' + dot + '"></span>' + esc(name) + ' <b>' + esc(sched) + '</b></span>')
+        # Map to Russian labels
+        name_map = {
+            'wibes-daily-download': 'Wibes: загрузка',
+            'wibes-morning-report': 'Wibes: отчёт',
+            'wibes-scheduler': 'Wibes: планировщик',
+            'WoopSocial Pinterest delivery status watcher': 'Pinterest: статус',
+            'S002 Junk Journal Vault WoopSocial status watcher': 'Junk Journal',
+            'S004 Planner Printable Studio WoopSocial status watcher': 'Planner Printable',
+            'S005 SVG Craft Cut Studio WoopSocial status watcher': 'SVG Craft',
+            'S006 StitchVault Studio WoopSocial status watcher — every 6h': 'StitchVault',
+            'YRE Engine': 'Ритм: постинг',
+            'YRE Engine v2': 'Ритм: постинг',
+            'daily-unicaizer-seo-3-articles': 'Unicaizer: SEO',
+        }
+        label = name_map.get(name, name)
+        cron_pills.append('<span class="pill"><span class="d ' + dot + '"></span>' + esc(label) + ' <b>' + esc(sched) + '</b></span>')
 
     sys_pills = (
         '<span class="pill"><span class="d g"></span>Диск ' + str(disk['pct_used']) + '%</span>'
