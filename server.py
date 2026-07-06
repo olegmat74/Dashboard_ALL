@@ -679,6 +679,14 @@ def build_creative_block() -> dict[str, Any]:
         'svg_craft_cut_studio_publish_queue.csv': 'SVG Craft Cut Studio',
         'stitchvault_studio_publish_queue.csv': 'StitchVault Studio',
     }
+    # Pinterest account URLs (from dashboard_data.json)
+    pinterest_urls = {
+        'woopsocial_publish_queue.csv': 'https://www.pinterest.com/hit_market/',
+        'junk_journal_vault_publish_queue.csv': 'https://www.pinterest.com/printablejournalideas/',
+        'planner_printable_studio_publish_queue.csv': 'https://www.pinterest.com/planner_printable_studio/',
+        'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
+        'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
+    }
     rows = []
     errors = total_published = total_all = total_today = 0
     for q in sorted(list((root / 'ops').glob('*publish_queue.csv')) + list((root / 'site_factory').glob('*publish_queue.csv'))):
@@ -706,8 +714,8 @@ def build_creative_block() -> dict[str, Any]:
         errors += err; total_published += published; total_all += len(cr); total_today += planned_today
         first = cr[0]
         site_url = first_existing('destination_url', 'destination_page', 'link', row=first)
-        pin_url = next((r.get('pin_url', '') for r in cr if r.get('pin_url')), '') or site_url
-        rows.append({**metrics_row(queue_names[q.name], pin_url, planned_today, published, remaining_today, next_from_rows(cr), status_label('bad' if err else 'ok')), 'site_url': site_url})
+        account_url = pinterest_urls.get(q.name, site_url)  # Pinterest profile, not pages.dev site
+        rows.append({**metrics_row(queue_names[q.name], account_url, planned_today, published, remaining_today, next_from_rows(cr), status_label('bad' if err else 'ok')), 'site_url': site_url})
     return {
         'title': 'Проект Creative Fabrica', 'columns_first': 'Pinterest аккаунт', 'site_column': 'Сайт аккаунта', 'rows': rows,
         'errors': errors, 'total_published': total_published, 'total_posts_all': total_all, 'total_posts_today': total_today,
