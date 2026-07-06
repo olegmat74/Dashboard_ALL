@@ -34,7 +34,6 @@ SESSION_SECRET_FILE = DASH_ROOT / '.session_secret'
 SESSION_COOKIE = 'projects_dashboard_session'
 POSTING_RULES_FILE = DASH_ROOT / 'posting_rules.json'
 
-
 def load_posting_rules() -> dict[str, Any]:
     if not POSTING_RULES_FILE.exists():
         return {}
@@ -43,23 +42,10 @@ def load_posting_rules() -> dict[str, Any]:
     except Exception:
         return {}
 
-
 def save_posting_rules(data: dict[str, Any]) -> None:
     POSTING_RULES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
-
 KNOWN_PROJECTS = [
-    {
-        'key': 'unicaizer',
-        'title': 'UNICAIZER',
-        'profile': 'unicaizer',
-        'path': PROFILES / 'unicaizer' / 'workspace' / 'unicaizer-app',
-        'kind': 'SaaS / обработка видео',
-        'public_url': 'https://unicaizer.ru',
-        'local_url': 'http://127.0.0.1:8000',
-        'health_url': 'http://127.0.0.1:8000/health',
-        'services': ['unicaizer-app-web.service', 'unicaizer-app-worker.service'],
-    },
     {
         'key': 'wibes',
         'title': 'Wibes Automation',
@@ -95,17 +81,13 @@ KNOWN_PROJECTS = [
     },
 ]
 
-
-
 def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
-
 
 def password_hash(password: str, salt: str | None = None) -> str:
     salt = salt or secrets.token_hex(16)
     digest = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 200_000).hex()
     return f'pbkdf2_sha256${salt}${digest}'
-
 
 def verify_password(password: str) -> bool:
     try:
@@ -117,19 +99,16 @@ def verify_password(password: str) -> bool:
     except Exception:
         return False
 
-
 def session_secret() -> str:
     if not SESSION_SECRET_FILE.exists():
         SESSION_SECRET_FILE.write_text(secrets.token_hex(32))
         SESSION_SECRET_FILE.chmod(0o600)
     return SESSION_SECRET_FILE.read_text().strip()
 
-
 def make_session_cookie() -> str:
     ts = str(int(time.time()))
     sig = hmac.new(session_secret().encode('utf-8'), ts.encode('utf-8'), hashlib.sha256).hexdigest()
     return f'{ts}:{sig}'
-
 
 def valid_session_cookie(value: str) -> bool:
     try:
@@ -140,7 +119,6 @@ def valid_session_cookie(value: str) -> bool:
         return hmac.compare_digest(good, sig)
     except Exception:
         return False
-
 
 def login_page(error: str = '') -> str:
     err = f'<div id="err" style="color:var(--red);font-size:11px;margin-top:6px">{esc(error)}</div>' if error else '<div id="err" style="color:var(--red);font-size:11px;margin-top:6px;display:none">Неверный пароль</div>'
@@ -174,7 +152,6 @@ def run(cmd: list[str], timeout: int = 4) -> str:
     except Exception as exc:
         return f''
 
-
 def fmt_dt(value: str | None) -> str:
     if not value:
         return '—'
@@ -183,7 +160,6 @@ def fmt_dt(value: str | None) -> str:
         return dt.astimezone().strftime('%d.%m %H:%M')
     except Exception:
         return str(value)[:16]
-
 
 def rel_age(ts: float | None) -> str:
     if not ts:
@@ -197,7 +173,6 @@ def rel_age(ts: float | None) -> str:
         return f'{int(sec//3600)} ч назад'
     return f'{int(sec//86400)} дн назад'
 
-
 def size_h(n: int) -> str:
     units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ']
     f = float(n)
@@ -206,7 +181,6 @@ def size_h(n: int) -> str:
             return f'{f:.1f} {u}' if u != 'Б' else f'{int(f)} {u}'
         f /= 1024
     return str(n)
-
 
 def dir_size(path: Path) -> int:
     total = 0
@@ -222,13 +196,11 @@ def dir_size(path: Path) -> int:
                 pass
     return total
 
-
 def count_glob(path: Path, pattern: str) -> int:
     try:
         return sum(1 for _ in path.rglob(pattern)) if path.exists() else 0
     except Exception:
         return 0
-
 
 def recent_files(path: Path, limit: int = 4) -> list[dict[str, str]]:
     rows = []
@@ -250,7 +222,6 @@ def recent_files(path: Path, limit: int = 4) -> list[dict[str, str]]:
         out.append({'name': p.name, 'path': str(p), 'age': rel_age(ts), 'size': size_h(sz)})
     return out
 
-
 def load_jobs(profile: str) -> list[dict[str, Any]]:
     p = PROFILES / profile / 'cron' / 'jobs.json'
     if not p.exists():
@@ -261,11 +232,9 @@ def load_jobs(profile: str) -> list[dict[str, Any]]:
     except Exception:
         return []
 
-
 def systemd_state(service: str) -> str:
     out = run(['systemctl', 'is-active', service], 2)
     return out or 'unknown'
-
 
 def http_health(url: str) -> tuple[str, str]:
     if not url:
@@ -274,7 +243,6 @@ def http_health(url: str) -> tuple[str, str]:
     if out:
         return 'ok', out[:120]
     return 'bad', 'не отвечает'
-
 
 def port_summary() -> list[dict[str, str]]:
     out = run(['ss', '-tulpn'], 4)
@@ -289,7 +257,6 @@ def port_summary() -> list[dict[str, str]]:
             rows.append({'local': local, 'process': proc.replace('users:', '')})
     return rows[:12]
 
-
 def process_hits(project: dict[str, Any]) -> list[str]:
     out = run(['ps', '-eo', 'pid,cmd'], 4)
     needle = str(project['path'])
@@ -298,7 +265,6 @@ def process_hits(project: dict[str, Any]) -> list[str]:
         if needle in line or project['key'] in line:
             hits.append(line.strip()[:180])
     return hits[:4]
-
 
 def build_state() -> dict[str, Any]:
     projects = []
@@ -381,16 +347,12 @@ def build_state() -> dict[str, Any]:
         'valid_until': valid_until,
     }
 
-
 def esc(x: Any) -> str:
     return html.escape(str(x if x is not None else ''))
-
 
 def badge(status: str) -> str:
     labels = {'ok': 'ОК', 'warn': 'Внимание', 'bad': 'Проблема', 'none': '—'}
     return f'<span class="badge {esc(status)}">{labels.get(status, esc(status))}</span>'
-
-
 
 def first_existing(*keys: str, row: dict[str, str]) -> str:
     for k in keys:
@@ -398,7 +360,6 @@ def first_existing(*keys: str, row: dict[str, str]) -> str:
         if v:
             return v
     return ''
-
 
 def parse_iso_ts(value: str) -> float | None:
     if not value:
@@ -409,7 +370,6 @@ def parse_iso_ts(value: str) -> float | None:
     except Exception:
         return None
 
-
 def short_dt(value: str) -> str:
     if not value:
         return '—'
@@ -419,13 +379,11 @@ def short_dt(value: str) -> str:
     except Exception:
         return value[:16]
 
-
 def short_url_label(url: str) -> str:
     if not url:
         return '—'
     label = url.replace('https://', '').replace('http://', '').rstrip('/')
     return label[:34] + ('…' if len(label) > 34 else '')
-
 
 def csv_rows(path: Path) -> list[dict[str, str]]:
     if not path.exists():
@@ -435,7 +393,6 @@ def csv_rows(path: Path) -> list[dict[str, str]]:
             return list(csv.DictReader(f))
     except Exception:
         return []
-
 
 def status_counts(rows: list[dict[str, str]]) -> dict[str, int]:
     out = {'total': len(rows), 'published': 0, 'scheduled': 0, 'error': 0, 'other': 0}
@@ -451,7 +408,6 @@ def status_counts(rows: list[dict[str, str]]) -> dict[str, int]:
             out['other'] += 1
     return out
 
-
 def next_from_rows(rows: list[dict[str, str]]) -> str:
     now = time.time()
     candidates = []
@@ -465,7 +421,6 @@ def next_from_rows(rows: list[dict[str, str]]) -> str:
     if not candidates:
         return '—'
     return short_dt(min(candidates)[1])
-
 
 def last_published_from_rows(rows: list[dict[str, str]]) -> str:
     vals = []
@@ -481,23 +436,13 @@ def last_published_from_rows(rows: list[dict[str, str]]) -> str:
         return '—'
     return short_dt(max(vals)[1])
 
-
 def link_html(url: str, label: str | None = None) -> str:
     if not url:
         return '<span class="muted">—</span>'
     return f'<a href="{esc(url)}" target="_blank" title="{esc(url)}">{esc(label or short_url_label(url))}</a>'
 
-
 def build_account_rows() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-
-    # UNICAIZER — сайт, не автопостинг
-    rows.append({
-        'project': 'UNICAIZER', 'account': 'Сайт / продукт', 'platform': 'Web',
-        'site_url': 'https://unicaizer.ru', 'account_url': 'https://unicaizer.ru',
-        'content': 'AI обработка видео, субтитры, дубляж, блог', 'when': 'сайт 24/7; SEO cron ежедневно 09:00',
-        'published': '—', 'scheduled': '1 SEO задача', 'next': 'ежедневно 09:00', 'last': '—', 'status': 'ok'
-    })
 
     # Wibes accounts
     auth = PROFILES / 'wibes' / 'workspace' / 'wibes-automation' / 'auth.json'
@@ -587,22 +532,18 @@ def build_account_rows() -> list[dict[str, Any]]:
 
     return rows
 
-
 def today_str() -> str:
     return datetime.now().date().isoformat()
-
 
 def start_of_today_ts() -> float:
     now = datetime.now()
     return datetime(now.year, now.month, now.day).timestamp()
-
 
 def file_mtime_today(path: Path) -> bool:
     try:
         return path.stat().st_mtime >= start_of_today_ts()
     except OSError:
         return False
-
 
 def count_files(path: Path, patterns: tuple[str, ...], today_only: bool = False) -> int:
     if not path.exists():
@@ -614,10 +555,8 @@ def count_files(path: Path, patterns: tuple[str, ...], today_only: bool = False)
                 total += 1
     return total
 
-
 def status_label(status: str) -> str:
     return {'ok': 'ОК', 'warn': 'Внимание', 'bad': 'Проблема', 'none': '—'}.get(status, status)
-
 
 def system_resources() -> dict[str, Any]:
     disk = shutil.disk_usage('/')
@@ -646,10 +585,9 @@ def system_resources() -> dict[str, Any]:
         }
     }
 
-
 def cron_all_rows() -> list[dict[str, str]]:
     out = []
-    for profile in ['wibes', 'autopost_creative_fabrica', 'autopost_ritm', 'unicaizer']:
+    for profile in ['wibes', 'autopost_creative_fabrica', 'autopost_ritm']:
         for j in load_jobs(profile):
             out.append({
                 'profile': profile,
@@ -663,7 +601,6 @@ def cron_all_rows() -> list[dict[str, str]]:
             })
     return out
 
-
 def metrics_row(name: str, url: str, planned: int | str, published: int | str, remaining: int | str, next_time: str, status: str) -> dict[str, Any]:
     return {
         'name': name,
@@ -674,7 +611,6 @@ def metrics_row(name: str, url: str, planned: int | str, published: int | str, r
         'next_time': next_time,
         'status': status,
     }
-
 
 def build_wibes_block() -> dict[str, Any]:
     root = PROFILES / 'wibes' / 'workspace' / 'wibes-automation'
@@ -734,7 +670,6 @@ def build_wibes_block() -> dict[str, Any]:
         'status': status_label('warn' if errors else 'ok'),
     }
 
-
 def build_creative_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_creative_fabrica'
     queue_names = {
@@ -779,7 +714,6 @@ def build_creative_block() -> dict[str, Any]:
         'status': status_label('bad' if errors else 'ok')
     }
 
-
 def build_ritm_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
     # business_id → profile URL mapping from core/config.py
@@ -810,33 +744,6 @@ def build_ritm_block() -> dict[str, Any]:
         'errors': 0, 'total_published': total_published, 'total_posts_all': total_all, 'total_posts_today': total_today,
         'status': status_label('warn' if any('устарел' in str(r['remaining_today']) for r in rows) else 'ok')
     }
-
-
-def build_unicaizer_block() -> dict[str, Any]:
-    db = PROFILES / 'unicaizer' / 'workspace' / 'unicaizer-app' / 'unicalizator.sqlite3'
-    m = {'unique_total': 0, 'unique_today': 0, 'telegram_users': 0, 'processing_now': 0, 'errors': 0, 'status': 'Проблема'}
-    try:
-        con = sqlite3.connect(db)
-        cur = con.cursor()
-        today_ts = start_of_today_ts()
-        m['unique_total'] = cur.execute("select count(distinct coalesce(actor_key, session_id, ip_hash)) from page_views").fetchone()[0] or 0
-        m['unique_today'] = cur.execute("select count(distinct coalesce(actor_key, session_id, ip_hash)) from page_views where created_at >= ?", (today_ts,)).fetchone()[0] or 0
-        m['telegram_users'] = cur.execute("select count(*) from users where telegram_id is not null").fetchone()[0] or 0
-        m['processing_now'] = cur.execute("select count(*) from jobs where status in ('queued','processing','running','started')").fetchone()[0] or 0
-        m['errors'] = cur.execute("select count(*) from jobs where status='error' and updated_at >= ?", (today_ts,)).fetchone()[0] or 0
-        hs, _ = http_health('http://127.0.0.1:8000/health')
-        if hs != 'ok':
-            m['status'] = status_label('bad')
-        elif m['errors'] > 0:
-            m['status'] = status_label('warn')
-        else:
-            m['status'] = status_label('ok')
-    except Exception:
-        pass
-    return {'title': 'Проект Unicaizer', **m}
-
-
-
 
 def aeza_server_info() -> dict[str, Any]:
     """Fetch server info from Aeza API. Returns dict with server data or empty fallback."""
@@ -893,7 +800,6 @@ def project_blocks() -> dict[str, Any]:
         'wibes': build_wibes_block(),
         'creative': build_creative_block(),
         'ritm': build_ritm_block(),
-        'unicaizer': build_unicaizer_block(),
     }
 
 def status_badge(status_text: str) -> str:
@@ -909,7 +815,6 @@ def status_badge(status_text: str) -> str:
         cls = 's-none'
     return f'<span class="badge {cls}">{esc(status_text)}</span>'
 
-
 def progress_bar(published: int, total: int | str) -> str:
     """Render a mini progress bar for today's plan completion."""
     try:
@@ -922,18 +827,16 @@ def progress_bar(published: int, total: int | str) -> str:
     except (ValueError, TypeError):
         return f'<span class="muted">{esc(published)}/{esc(total)}</span>'
 
-
 def render() -> str:
     s = build_state()
     resources = system_resources()
     blocks = project_blocks()
     cron_rows = cron_all_rows()
 
-    uni = blocks['unicaizer']
-    total_posts_all = sum(b.get('total_posts_all', 0) for k, b in blocks.items() if k != 'unicaizer')
-    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() if k != 'unicaizer')
-    total_errors = sum(b.get('errors', 0) for k, b in blocks.items() if k != 'unicaizer') + uni.get('errors', 0)
-    project_count = sum(1 for k, b in blocks.items() if b.get('rows') or k == 'unicaizer')
+    total_posts_all = sum(b.get('total_posts_all', 0) for k, b in blocks.items() )
+    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() )
+    total_errors = sum(b.get('errors', 0) for k, b in blocks.items() ) + uni.get('errors', 0)
+    project_count = sum(1 for k, b in blocks.items() if b.get('rows'))
 
     # Build table rows for each project
     def build_rows() -> str:
@@ -1008,10 +911,6 @@ def render() -> str:
             name = esc(r['name'])
             pub = esc(published)
             rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f ac" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
-
-        # Unicaizer section
-        rows.append('<tr><td colspan="7" class="sec-hd">🎬 Unicaizer <span class="sec-cnt">1</span></td></tr>')
-        rows.append('<tr onclick="window.open(\'https://unicaizer.ru\',\'_blank\')"><td><span class="nm">Unicaizer</span></td><td class="cn">' + esc(uni['unique_total']) + '</td><td class="cn">' + esc(uni['unique_today']) + '</td><td class="cn">24/7</td><td><div class="bar"><div class="bar-f ac" style="width:100%"></div></div></td><td class="pct">100%</td><td class="cn">—</td></tr>')
 
         return '\n'.join(rows)
 
@@ -1102,7 +1001,6 @@ function clk(){var n=new Date();document.getElementById('clk').textContent=n.toL
 clk();setInterval(clk,1000);setTimeout(function(){location.reload()},120000);
 </script>
 </body></html>"""
-
 
 def render_settings() -> str:
     return """<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Настройки</title></head>
@@ -1219,7 +1117,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers(); self.wfile.write(body); return
         self.send_response(404); self.end_headers(); self.wfile.write(b'not found')
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()

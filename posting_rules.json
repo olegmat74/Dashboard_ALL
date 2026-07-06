@@ -37,17 +37,5 @@
       "План генерируется каждое утро через YRE Engine",
       "Аккаунты: lovi_nahodki, pokypay_online"
     ]
-  },
-  "unicaizer": {
-    "title": "Unicaizer",
-    "time_window": "24/7",
-    "posts_per_day": "3 SEO статьи",
-    "interval_min": 0,
-    "rules": [
-      "Сайт работает 24/7",
-      "3 SEO статьи в день, публикует cron в 09:00 ЕКБ",
-      "Обработка видео — без ограничений по времени",
-      "Health check: http://127.0.0.1:8000/health"
-    ]
   }
 }
