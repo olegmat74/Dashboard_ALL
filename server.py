@@ -885,9 +885,9 @@ def render() -> str:
 </style></head><body><div class="wrap">
 <header><div class="header-row"><h1 style="margin:0;font-size:26px;white-space:nowrap">Дашборд всех проектов</h1><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💾 <span>{esc(resources['memory']['free'])}</span> из {esc(resources['memory']['total'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💿 <span>{esc(resources['disk']['free'])}</span> из {esc(resources['disk']['total'])}</span><span style="background:#e1ebfa;border:1px solid #b8cbe8;border-radius:8px;padding:3px 16px;white-space:nowrap;font-size:13px;color:#1e3a6b">🇩🇪 Server1 · 📡 {esc(s['ip'])} · 🟢 В работе · Действует до {esc(s['valid_until'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">Обновлено {esc(s['generated'])}</span></div></header>
 <section class="panel"><details><summary style="cursor:pointer;color:#475569;font-weight:500;font-size:12px;padding:4px 0">Cron всех проектов</summary><div class="tablebox" style="margin-top:6px"><table><thead><tr><th>Профиль</th><th>Включен или выключен</th><th>Расписание</th><th>Последний запуск</th><th>Следующий запуск</th><th>Статус</th></tr></thead><tbody>{cron_html}</tbody></table></div></details></section>
-<section class="panel"><h2>Проект Wibes</h2>{project_table(blocks['wibes'])}</section>
-<section class="panel"><h2>Проект Creative Fabrica</h2>{project_table(blocks['creative'])}</section>
-<section class="panel"><h2>Проект Ритм</h2>{project_table(blocks['ritm'])}</section>
+<section class="panel"><h2>Проект Wibes</h2>{metric_cards(blocks['wibes'])}{project_table(blocks['wibes'])}</section>
+<section class="panel"><h2>Проект Creative Fabrica</h2>{metric_cards(blocks['creative'])}{project_table(blocks['creative'])}</section>
+<section class="panel"><h2>Проект Ритм</h2>{metric_cards(blocks['ritm'])}{project_table(blocks['ritm'])}</section>
 <section class="panel"><h2>Проект Unicaizer</h2><div class="unigrid">
   <div><span>Всего уникальных посетителей</span><span>{esc(uni['unique_total'])}</span></div>
   <div><span>Уникальные посетители за сегодня</span><span>{esc(uni['unique_today'])}</span></div>
