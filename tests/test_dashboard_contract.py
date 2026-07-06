@@ -21,8 +21,7 @@ class DashboardContractTest(unittest.TestCase):
 
     def test_dashboard_is_split_into_project_blocks_and_non_project_blocks(self):
         for text in [
-            "Оперативная память",
-            "Жёсткий диск",
+            "Дашборд всех проектов",
             "Cron всех проектов",
             "Проект Wibes",
             "Проект Creative Fabrica",
