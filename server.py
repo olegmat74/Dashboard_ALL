@@ -315,16 +315,37 @@ def build_state() -> dict[str, Any]:
             'processes': process_hits(pr),
         })
     disk = shutil.disk_usage('/')
+    aeza = aeza_server_info()
+    if aeza.get('ok'):
+        location_flags = {'de': '🇩🇪', 'ru': '🇷🇺', 'fi': '🇫🇮', 'nl': '🇳🇱', 'sg': '🇸🇬', 'hk': '🇭🇰', 'br': '🇧🇷', 'us': '🇺🇸'}
+        flag = location_flags.get(aeza.get('location', ''), '🌐')
+        expires_raw = aeza.get('expires_at', '')
+        valid_until = '—'
+        if expires_raw:
+            try:
+                dt = datetime.fromisoformat(expires_raw.replace('Z', '+00:00'))
+                months = ['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря']
+                valid_until = f"{dt.day} {months[dt.month-1]} {dt.year} года"
+            except Exception:
+                valid_until = expires_raw[:10]
+        host_display = f"{flag} {aeza.get('name', 'Server1')}"
+        status_map = {'active': '🟢 В работе', 'suspended': '🔴 Приостановлен', 'blocked': '⛔ Заблокирован', 'deleted': '🗑 Удалён'}
+        state_str = status_map.get(aeza.get('status', ''), aeza.get('status', '—'))
+        ip_str = aeza.get('ip') or (run(['hostname','-I'], 3).split()[0] if run(['hostname','-I'], 3) else '—')
+    else:
+        host_display = f"🌐 {socket.gethostname()}"
+        state_str = f"работает ({run(['uptime','-p'], 3).replace('up ','')})" if run(['uptime','-p'], 3) else 'работает'
+        valid_until = '—'
+        ip_str = run(['hostname','-I'], 3).split()[0] if run(['hostname','-I'], 3) else '—'
     return {
         'generated': datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
-        'host': socket.gethostname(),
+        'host': host_display,
         'projects': projects,
         'ports': port_summary(),
         'disk': {'total': size_h(disk.total), 'used': size_h(disk.used), 'free': size_h(disk.free), 'pct': round(disk.used / disk.total * 100)},
-        'ip': run(['hostname','-I'], 3).split()[0] if run(['hostname','-I'], 3) else '—',
-        'state': f"работает ({run(['uptime','-p'], 3).replace('up ','')})" if run(['uptime','-p'], 3) else 'работает',
-        'valid_until': (lambda raw: (lambda d: f"{d.day} {['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'][d.month-1]} {d.year} года")(datetime.strptime(raw, '%b %d %H:%M:%S %Y GMT')) if raw else '—')(run(['bash','-c','openssl s_client -connect unicaizer.ru:443 -servername unicaizer.ru </dev/null 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2'], 10).strip()),
-
+        'ip': ip_str,
+        'state': state_str,
+        'valid_until': valid_until,
     }
 
 
@@ -769,6 +790,58 @@ def build_unicaizer_block() -> dict[str, Any]:
         pass
     return {'title': 'Проект Unicaizer', **m}
 
+
+
+
+def aeza_server_info() -> dict[str, Any]:
+    """Fetch server info from Aeza API. Returns dict with server data or empty fallback."""
+    api_key = None
+    # Read API key from git-credentials or .env
+    try:
+        cred = Path.home() / '.git-credentials'
+        if cred.exists():
+            for line in cred.read_text().splitlines():
+                if 'github.com' in line and 'x-access-token' in line:
+                    # The Aeza API key was stored somewhere... let's try reading from a file
+                    pass
+    except Exception:
+        pass
+    # Read the Aeza API key from the server's config or environment
+    # For now, use hardcoded key (rotated by user)
+    key = '7361_11aefe867c2dda8118368b6d71276be0'
+    try:
+        import urllib.request
+        r = urllib.request.Request(
+            'https://my.aeza.net/api/services',
+            headers={'X-API-Key': key, 'User-Agent': 'Hermes-Dashboard/1.0'},
+        )
+        with urllib.request.urlopen(r, timeout=10) as resp:
+            data = json.loads(resp.read().decode()).get('data', {})
+            items = data.get('items', [])
+            if items:
+                sv = items[0]
+                expires = sv.get('expiresAt', '')
+                created = sv.get('createdAt', '')
+                status = sv.get('status', '')
+                params = sv.get('parameters', {})
+                return {
+                    'name': sv.get('name', 'Server1'),
+                    'ip': sv.get('ip', ''),
+                    'status': status,
+                    'location': sv.get('locationCode', ''),
+                    'expires_at': expires,
+                    'created_at': created,
+                    'auto_prolong': sv.get('autoProlong', False),
+                    'cpu': params.get('cpu', 0),
+                    'ram_gb': params.get('ram', 0),
+                    'disk_gb': params.get('rom', 0),
+                    'price': sv.get('price', 0),
+                    'product': sv.get('productName', ''),
+                    'ok': True,
+                }
+    except Exception as exc:
+        print(f'[aeza_api] error: {exc}')
+    return {'ok': False}
 
 def project_blocks() -> dict[str, Any]:
     return {
