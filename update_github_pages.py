@@ -84,8 +84,22 @@ async function openWith(password) {{
   try {{
     const html = await decrypt(password);
     sessionStorage.setItem('dashboard_pages_password', password);
-    document.open(); document.write(html); document.close();
+    document.getElementById('d').innerHTML = html;
     document.getElementById('lo').style.display = 'none';
+    // Run clock if script didn't execute
+    if (typeof clk === 'undefined' && document.getElementById('clk')) {{
+      var clk = function(){{
+        var n = new Date();
+        var el = document.getElementById('clk');
+        if (el) el.textContent = n.toLocaleDateString('ru-RU',{{day:'2-digit',month:'2-digit',year:'numeric'}})+' \\u00b7 '+n.toLocaleTimeString('ru-RU',{{hour:'2-digit',minute:'2-digit'}});
+        var ft = document.getElementById('ft');
+        if (ft) ft.textContent = n.toLocaleTimeString('ru-RU',{{hour:'2-digit',minute:'2-digit'}});
+      }};
+      clk();
+      setInterval(clk, 1000);
+    }}
+    // Auto refresh
+    setTimeout(function(){{location.reload()}}, 120000);
   }} catch(e) {{
     sessionStorage.removeItem('dashboard_pages_password');
     document.getElementById('err').style.display = 'block';
