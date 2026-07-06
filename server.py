@@ -926,6 +926,27 @@ def render() -> str:
     mem = resources['memory']
     disk = resources['disk']
     err_cls = 'o' if total_errors else 'g'
+    # Cron pill summaries
+    cron_pills = []
+    for j in cron_rows:
+        if j.get('enabled') != 'да':
+            continue
+        name = j.get('name', '')
+        sched = j.get('schedule', '')
+        is_err = j.get('status', '') == 'ошибка'
+        dot = 'r' if is_err else 'g'
+        # Shorten common names
+        name = name.replace('WoopSocial Pinterest delivery status watcher', 'Pinterest статус')
+        name = name.replace('S002 Junk Journal Vault WoopSocial status watcher', 'Junk Journal')
+        name = name.replace('S004 Planner Printable Studio WoopSocial status watcher', 'Planner Printable')
+        name = name.replace('S005 SVG Craft Cut Studio WoopSocial status watcher', 'SVG Craft')
+        name = name.replace('S006 StitchVault Studio WoopSocial status watcher — every 6h', 'StitchVault')
+        name = name.replace('wibes-daily-download', 'Wibes загрузка')
+        name = name.replace('wibes-morning-report', 'Wibes отчёт')
+        name = name.replace('wibes-scheduler', 'Wibes планировщик')
+        name = name.replace('daily-unicaizer-seo-3-articles', 'SEO Unicaizer')
+        cron_pills.append('<span class="pill"><span class="d ' + dot + '"></span>' + esc(name) + ' <b>' + esc(sched) + '</b></span>')
+
     sys_pills = (
         '<span class="pill"><span class="d g"></span>Диск ' + str(disk['pct_used']) + '%</span>'
         + '<span class="pill"><span class="d g"></span>RAM ' + esc(mem['free']) + '</span>'
@@ -933,6 +954,7 @@ def render() -> str:
         + '<span class="pill"><span class="d ' + err_cls + '"></span>Ошибки ' + str(total_errors) + '</span>'
         + '<span class="pill"><span class="d g"></span>Обновление <b>каждые 2m</b></span>'
         + '<span class="pill"><span class="d g"></span>Срок сервера <b>' + esc(s['valid_until']) + '</b></span>'
+        + ''.join(cron_pills)
     )
 
     return """<!doctype html>
