@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.dashboard_password_hash
+.session_secret
+.initial_password.txt
+.env
