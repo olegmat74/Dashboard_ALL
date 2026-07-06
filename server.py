@@ -303,7 +303,7 @@ def build_state() -> dict[str, Any]:
                 'name': j.get('name') or j.get('id'),
                 'enabled': bool(j.get('enabled')),
                 'state': j.get('state') or '—',
-                'status': j.get('last_status') or '—',
+                'status': {'ok': 'ОК', 'error': 'ошибка', 'running': 'выполняется', 'scheduled': 'запланирован'}.get(j.get('last_status') or '', j.get('last_status') or '—'),
                 'next': fmt_dt(j.get('next_run_at')),
                 'last': fmt_dt(j.get('last_run_at')),
                 'error': (j.get('last_error') or '')[:220],
@@ -625,7 +625,7 @@ def cron_all_rows() -> list[dict[str, str]]:
                 'schedule': j.get('schedule_display') or '—',
                 'last': fmt_dt(j.get('last_run_at')),
                 'next': fmt_dt(j.get('next_run_at')),
-                'status': j.get('last_status') or '—',
+                'status': {'ok': 'ОК', 'error': 'ошибка', 'running': 'выполняется', 'scheduled': 'запланирован'}.get(j.get('last_status') or '', j.get('last_status') or '—'),
                 'error': (j.get('last_error') or '')[:180],
             })
     return out
