@@ -949,7 +949,7 @@ body{min-height:100vh}
 .dash.on{opacity:1}
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--b)}
 .hdr h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
-.hdr-date{font-size:11px;color:var(--t3);margin-top:1px}
+.hdr-date{font-size:12px;color:var(--t2);margin-top:2px}
 .hdr-r{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
