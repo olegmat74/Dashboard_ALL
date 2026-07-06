@@ -143,11 +143,30 @@ def valid_session_cookie(value: str) -> bool:
 
 
 def login_page(error: str = '') -> str:
-    err = f'<div class="error">{esc(error)}' if error else ''
+    err = f'<div id="err" style="color:var(--red);font-size:11px;margin-top:6px">{esc(error)}</div>' if error else '<div id="err" style="color:var(--red);font-size:11px;margin-top:6px;display:none">Неверный пароль</div>'
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Вход — дашборд проектов</title><style>
-*{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0b1020;color:#eef2ff}}.box{{width:min(420px,calc(100vw - 32px));background:#111936;border:1px solid #26304f;border-radius:22px;padding:26px;box-shadow:0 20px 60px #0008}}h1{{margin:0 0 8px;font-size:26px;letter-spacing:-.04em}}p{{margin:0 0 20px;color:#98a2b3}}label{{display:block;margin:0 0 8px;color:#c8d4ff;font-weight:500}}input{{width:100%;height:46px;border-radius:12px;border:1px solid #33405f;background:#070b17;color:#eef2ff;padding:0 12px;font-size:16px}}button{{width:100%;height:46px;margin-top:14px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:900;cursor:pointer}}.error{{background:#51101a;color:#ffb1bd;border:1px solid #9d2f3b;padding:10px;border-radius:12px;margin-bottom:14px}}
-</style></head><body><form class="box" method="post" action="/login"><h1>Единый дашборд</h1><p>Введите пароль для доступа к проектам.</p>{err}<label>Пароль</label><input name="password" type="password" autocomplete="current-password" autofocus required><button type="submit">Войти</button></form></body></html>"""
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}:root{{--bg:#0a0a0f;--s:#12121a;--s2:#1a1a25;--s3:#22222f;--b:#2a2a3a;--b2:#3a3a4a;--t:#e8e8f0;--t2:#a0a0b8;--t3:#6a6a80;--accent:#6366f1;--accent2:#818cf8;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--pink:#ec4899;--purple:#a855f7;--r:10px;--font:'Inter',system-ui,sans-serif}}
+html{{background:var(--bg);color:var(--t);font-family:var(--font);font-size:13px;-webkit-font-smoothing:antialiased}}
+.login{{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center}}
+.login-box{{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:32px;width:100%;max-width:340px;text-align:center}}
+.login-box h2{{font-size:18px;font-weight:700;margin-bottom:4px}}
+.login-box p{{color:var(--t3);font-size:12px;margin-bottom:20px}}
+input{{width:100%;padding:10px 14px;background:var(--s2);border:1px solid var(--b);border-radius:8px;color:var(--t);font-size:13px;font-family:var(--font);outline:none}}
+input:focus{{border-color:var(--accent)}}
+button{{width:100%;padding:10px;margin-top:10px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer}}
+button:hover{{opacity:.9}}
+</style></head><body>
+<div class="login"><div class="login-box"><h2>Dashboard</h2><p>Введите пароль</p>
+<form method="post" action="/login">
+<input name="password" type="password" placeholder="Пароль" autofocus required>
+<button type="submit">Войти</button>
+</form>
+{err}
+</div></div></body></html>"""
 
 def run(cmd: list[str], timeout: int = 4) -> str:
     try:
@@ -910,342 +929,187 @@ def render() -> str:
     blocks = project_blocks()
     cron_rows = cron_all_rows()
 
-    # Aggregate KPIs
-    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() if k != 'unicaizer')
-    total_published_all = sum(b.get('total_published', 0) for k, b in blocks.items() if k != 'unicaizer')
-    total_errors = sum(b.get('errors', 0) for k, b in blocks.items() if k != 'unicaizer') + blocks['unicaizer'].get('errors', 0)
-    total_accounts = sum(len(b.get('rows', [])) for k, b in blocks.items() if k != 'unicaizer')
-
     uni = blocks['unicaizer']
+    total_posts_all = sum(b.get('total_posts_all', 0) for k, b in blocks.items() if k != 'unicaizer')
+    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() if k != 'unicaizer')
+    total_errors = sum(b.get('errors', 0) for k, b in blocks.items() if k != 'unicaizer') + uni.get('errors', 0)
+    project_count = sum(1 for k, b in blocks.items() if b.get('rows') or k == 'unicaizer')
 
-    def kpi_card(icon: str, label: str, value: str, sub: str = '', cls: str = '') -> str:
-        sub_html = f'<div class="kpi-sub">{esc(sub)}</div>' if sub else ''
-        return f'<div class="kpi {cls}"><div class="kpi-icon">{icon}</div><div class="kpi-body"><div class="kpi-val">{esc(value)}</div><div class="kpi-label">{esc(label)}</div>{sub_html}</div></div>'
+    # Build table rows for each project
+    def build_rows() -> str:
+        rows = []
 
-    def metric_row(block: dict[str, Any]) -> str:
-        cells = [
-            ('📊', 'Запланировано сегодня', block.get('total_posts_today', 0)),
-            ('✅', 'Опубликовано всего', block.get('total_published', 0)),
-            ('📁', 'Всего постов', block.get('total_posts_all', 0)),
-            ('⚠️', 'Ошибки', block.get('errors', 0)),
-        ]
-        cards = ''.join(f'<div class="mc"><span class="mc-l">{icon} {esc(label)}</span><span class="mc-v">{esc(val)}</span></div>' for icon, label, val in cells)
-        return f'<div class="metric-row">{cards}<div class="mc mc-status"><span class="mc-l">Статус</span>{status_badge(block.get("status", "—"))}</div></div>'
-
-    def project_table(block: dict[str, Any]) -> str:
-        rows_html = []
-        for r in block['rows']:
-            extra = f'<td>{link_html(r.get("site_url", "") or "")}</td>' if block.get('site_column') else ''
-            site_th = '<th>Сайт</th>' if block.get('site_column') else ''
-            name_cell = link_html(r['url'], r['name'])
-            # Progress bar: today's completion = (planned - remaining) / planned
+        # Wibes section
+        w = blocks['wibes']
+        wrows = w.get('rows', [])
+        rows.append('<tr><td colspan="7" class="sec-hd">🎥 Wibes <span class="sec-cnt">' + str(len(wrows)) + '</span></td></tr>')
+        for r in wrows:
+            plan = r.get('planned_today', 0)
+            published = r.get('published', 0)
+            remaining = r.get('remaining_today', 0)
             try:
-                planned = int(r.get('planned_today', 0))
-                remaining = int(r.get('remaining_today', 0)) if isinstance(r.get('remaining_today'), (int, str)) and str(r.get('remaining_today', '')).isdigit() else 0
-                done = max(0, planned - remaining)
-                pbar = progress_bar(done, planned) if planned > 0 else '<span class="muted">—</span>'
-            except (ValueError, TypeError):
-                pbar = '<span class="muted">—</span>'
-            rows_html.append(f'<tr><td class="cell-name">{name_cell}</td><td class="num">{pbar}</td><td class="num">{esc(r.get("published", "—"))}</td><td class="num">{esc(r.get("remaining_today", "—"))}</td><td class="cell-next">{esc(r.get("next_time", "—"))}</td>{extra}<td>{status_badge(r.get("status", "—"))}</td></tr>')
-        site_th = '<th>Сайт</th>' if block.get('site_column') else ''
-        return f'<div class="table-wrap"><table class="data-table"><thead><tr><th>{esc(block["columns_first"])}</th><th>План / факт</th><th>Опубл.</th><th>Осталось</th><th>Следующий</th>{site_th}<th>Статус</th></tr></thead><tbody>{"".join(rows_html)}</tbody></table></div>'
+                plan_int = int(plan) if isinstance(plan, (int, str)) and str(plan).isdigit() else 0
+                rem_int = int(remaining) if isinstance(remaining, (int, str)) and str(remaining).isdigit() else 0
+                done = max(0, plan_int - rem_int)
+                pct = min(100, round(done / plan_int * 100)) if plan_int > 0 else 0
+            except:
+                plan_int = 0; done = 0; pct = 0
+            bar_w = str(pct) + '%'
+            next_t = r.get('next_time', '—')
+            if next_t == 'нет плана':
+                next_t = '—'
+            url = r.get('url', '') or '#'
+            name = esc(r['name'])
+            pub = esc(published)
+            rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f pk" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
 
-    cron_html = ''.join(f"""
-      <tr><td class="cell-name">{esc(r['name'])}</td><td><span class="tag {('tag-on' if r['enabled']=='да' else 'tag-off')}">{esc(r['enabled'])}</span></td><td class="mono">{esc(r['schedule'])}</td><td class="cell-next">{esc(r['last'])}</td><td class="cell-next">{esc(r['next'])}</td><td>{status_badge(r['status'])}</td></tr>""" for r in cron_rows) or '<tr><td colspan="6" class="empty-row">Cron задач нет</td></tr>'
+        # Creative Fabrica section
+        c = blocks['creative']
+        crows = c.get('rows', [])
+        rows.append('<tr><td colspan="7" class="sec-hd">📌 Pinterest / Creative Fabrica <span class="sec-cnt">' + str(len(crows)) + '</span></td></tr>')
+        for r in crows:
+            plan = r.get('planned_today', 0)
+            published = r.get('published', 0)
+            remaining = r.get('remaining_today', 0)
+            try:
+                plan_int = int(plan) if isinstance(plan, (int, str)) and str(plan).isdigit() else 0
+                rem_int = int(remaining) if isinstance(remaining, (int, str)) and str(remaining).isdigit() else 0
+                done = max(0, plan_int - rem_int)
+                pct = min(100, round(done / plan_int * 100)) if plan_int > 0 else 0
+            except:
+                plan_int = 0; done = 0; pct = 0
+            bar_w = str(pct) + '%'
+            next_t = r.get('next_time', '—')
+            url = r.get('url', '') or '#'
+            name = esc(r['name'])
+            pub = esc(published)
+            rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f pu" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
 
-    # Unicaizer card
-    uni_html = f"""
-      <div class="uni-grid">
-        <div class="uni-cell"><span class="uni-l">👥 Всего посетителей</span><span class="uni-v">{esc(uni['unique_total'])}</span></div>
-        <div class="uni-cell"><span class="uni-l">👤 Уникальных сегодня</span><span class="uni-v">{esc(uni['unique_today'])}</span></div>
-        <div class="uni-cell"><span class="uni-l">💬 Telegram пользователей</span><span class="uni-v">{esc(uni['telegram_users'])}</span></div>
-        <div class="uni-cell"><span class="uni-l">🎬 В обработке сейчас</span><span class="uni-v">{esc(uni['processing_now'])}</span></div>
-        <div class="uni-cell"><span class="uni-l">⚠️ Ошибки сегодня</span><span class="uni-v {'err' if uni['errors'] else ''}">{esc(uni['errors'])}</span></div>
-        <div class="uni-cell"><span class="uni-l">Status</span>{status_badge(uni['status'])}</div>
-      </div>"""
+        # Ritm section
+        ritm = blocks['ritm']
+        rrows = ritm.get('rows', [])
+        rows.append('<tr><td colspan="7" class="sec-hd">🛒 Яндекс Ритм <span class="sec-cnt">' + str(len(rrows)) + '</span></td></tr>')
+        for r in rrows:
+            plan = r.get('planned_today', 0)
+            published = r.get('published', 0)
+            remaining = r.get('remaining_today', 0)
+            try:
+                plan_int = int(plan) if isinstance(plan, (int, str)) and str(plan).isdigit() else 0
+                rem_int = int(remaining) if isinstance(remaining, (int, str)) and str(remaining).isdigit() else 0
+                done = max(0, plan_int - rem_int)
+                pct = min(100, round(done / plan_int * 100)) if plan_int > 0 else 0
+            except:
+                plan_int = 0; done = 0; pct = 0
+            bar_w = str(pct) + '%'
+            next_t = str(r.get('next_time', '—'))
+            if next_t == 'план устарел':
+                next_t = 'устарел'
+            url = r.get('url', '') or '#'
+            name = esc(r['name'])
+            pub = esc(published)
+            rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f ac" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
 
-    # Posting rules display
-    rules = load_posting_rules()
+        # Unicaizer section
+        rows.append('<tr><td colspan="7" class="sec-hd">🎬 Unicaizer <span class="sec-cnt">1</span></td></tr>')
+        rows.append('<tr onclick="window.open(\'https://unicaizer.ru\',\'_blank\')"><td><span class="nm">Unicaizer</span></td><td class="cn">' + esc(uni['unique_total']) + '</td><td class="cn">' + esc(uni['unique_today']) + '</td><td class="cn">24/7</td><td><div class="bar"><div class="bar-f ac" style="width:100%"></div></div></td><td class="pct">100%</td><td class="cn">—</td></tr>')
 
-    def rules_strip(project_key: str) -> str:
-        r = rules.get(project_key)
-        if not r:
-            return ''
-        chips = []
-        if r.get('time_window'):
-            chips.append(f'<span class="rule-chip">🕐 {esc(r["time_window"])}</span>')
-        if r.get('posts_per_day'):
-            chips.append(f'<span class="rule-chip">📊 {esc(r["posts_per_day"])}</span>')
-        if r.get('interval_min') and int(r.get('interval_min', 0)) > 0:
-            chips.append(f'<span class="rule-chip">⏱ ≥{esc(r["interval_min"])} мин</span>')
-        return f'<div class="rules-strip">{"".join(chips)}</div>' if chips else ''
+        return '\n'.join(rows)
 
-    mem_pct = resources['memory']['pct_free']
-    disk_pct = resources['disk']['pct_free']
+    # System pills
+    mem = resources['memory']
+    disk = resources['disk']
+    err_cls = 'o' if total_errors else 'g'
+    sys_pills = (
+        '<span class="pill"><span class="d g"></span>Диск ' + str(disk['pct_used']) + '%</span>'
+        + '<span class="pill"><span class="d g"></span>RAM ' + esc(mem['free']) + '</span>'
+        + '<span class="pill"><span class="d g"></span>Сервер ' + esc(s['ip']) + '</span>'
+        + '<span class="pill"><span class="d ' + err_cls + '"></span>Ошибки ' + str(total_errors) + '</span>'
+        + '<span class="pill"><span class="d g"></span>Обновление <b>каждые 2m</b></span>'
+        + '<span class="pill"><span class="d g"></span>Срок сервера <b>' + esc(s['valid_until']) + '</b></span>'
+    )
 
-    return f"""<!doctype html>
+    return """<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Дашборд проектов — Hermes</title>
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{{--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#1e293b;--text2:#64748b;--text3:#94a3b8;--accent:#3b82f6;--accent2:#6366f1;--green:#10b981;--green-bg:#d1fae5;--amber:#f59e0b;--amber-bg:#fef3c7;--red:#ef4444;--red-bg:#fee2e2;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.08)}}
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}}
-a{{color:var(--accent);text-decoration:none;transition:color .15s}}a:hover{{color:var(--accent2);text-decoration:underline}}
-.wrap{{max-width:1480px;margin:0 auto;padding:16px 20px}}
-/* Header */
-.header{{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;box-shadow:var(--shadow);margin-bottom:16px}}
-.header-left{{display:flex;align-items:center;gap:14px;flex-wrap:wrap}}
-.header h1{{font-size:22px;font-weight:600;letter-spacing:-.02em;color:#0f172a;white-space:nowrap}}
-.header-chips{{display:flex;gap:8px;flex-wrap:wrap}}
-.chip{{display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}}
-.chip b{{color:var(--text);font-weight:600}}
-.chip.server{{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}}
-.chip.ok{{background:var(--green-bg);border-color:#a7f3d0;color:#065f46}}
-/* KPI row */
-.kpi-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px}}
-.kpi{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:box-shadow .15s}}
-.kpi:hover{{box-shadow:var(--shadow-md)}}
-.kpi-icon{{font-size:24px;line-height:1;flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#f0f4ff;border-radius:10px}}
-.kpi-val{{font-size:24px;font-weight:700;color:#0f172a;line-height:1.1}}
-.kpi-label{{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px}}
-.kpi-sub{{font-size:11px;color:var(--text3);margin-top:1px}}
-.kpi.err .kpi-icon{{background:var(--red-bg)}}.kpi.err .kpi-val{{color:var(--red)}}
-.kpi.ok .kpi-icon{{background:var(--green-bg)}}.kpi.ok .kpi-val{{color:var(--green)}}
-/* Cards */
-.card{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}}
-.card-head{{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:#fafbfc}}
-.card-head h2{{font-size:15px;font-weight:600;color:#0f172a;display:flex;align-items:center;gap:8px}}
-.card-head .card-meta{{font-size:12px;color:var(--text3)}}
-.card-body{{padding:14px 18px}}
-/* Metric row inside card */
-.metric-row{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}}
-.mc{{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px}}
-.mc-l{{font-size:11px;color:var(--text2);font-weight:500}}
-.mc-v{{font-size:18px;font-weight:700;color:#0f172a}}
-.mc-status{{align-items:flex-start}}
-/* Tables */
-.table-wrap{{overflow-x:auto}}
-.data-table{{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}}
-.data-table th{{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);background:#f8fafc;border-bottom:2px solid var(--border);white-space:nowrap}}
-.data-table td{{padding:9px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}}
-.data-table tbody tr:hover{{background:#f8fafc}}
-.data-table tr:last-child td{{border-bottom:none}}
-.cell-name a{{font-weight:600}}.cell-name{{min-width:140px}}
-.cell-next{{color:var(--text2);white-space:nowrap}}.num{{text-align:center;font-weight:600;white-space:nowrap}}
-.empty-row{{text-align:center;color:var(--text3);padding:20px}}
-/* Status badges */
-.badge{{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}}
-.badge::before{{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}}
-.s-ok{{background:var(--green-bg);color:#065f46}}.s-ok::before{{background:var(--green)}}
-.s-warn{{background:var(--amber-bg);color:#92400e}}.s-warn::before{{background:var(--amber)}}
-.s-bad{{background:var(--red-bg);color:#991b1b}}.s-bad::before{{background:var(--red)}}
-.s-none{{background:#f1f5f9;color:var(--text2)}}.s-none::before{{background:#cbd5e1}}
-/* Progress bar */
-.pbar{{position:relative;display:inline-block;width:80px;height:20px;background:#e2e8f0;border-radius:6px;overflow:hidden;vertical-align:middle}}
-.pbar-fill{{height:100%;background:linear-gradient(90deg,#6366f1,#3b82f6);border-radius:6px;transition:width .3s;min-width:2px}}
-.pbar-text{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#1e293b;text-shadow:0 0 2px #fff}}
-/* Tags */
-.tag{{display:inline-flex;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}}
-.tag-on{{background:var(--green-bg);color:#065f46}}.tag-off{{background:#f1f5f9;color:var(--text3)}}
-.mono{{font-family:'SF Mono','Monaco','Cascadia Code',monospace;font-size:12px;color:var(--text2)}}
-/* Unicaizer grid */
-.uni-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}}
-.uni-cell{{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;justify-content:space-between}}
-.uni-l{{font-size:11px;color:var(--text2);font-weight:500}}
-.uni-v{{font-size:22px;font-weight:700;color:#0f172a}}.uni-v.err{{color:var(--red)}}
-.muted{{color:var(--text3)}}
-/* Cron details */
-details{{border:none}}details summary{{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:8px 0;list-style:none}}details summary::-webkit-details-marker{{display:none}}
-details summary::before{{content:'▸ ';transition:transform .15s;display:inline-block}}details[open] summary::before{{content:'▾ '}}
-/* Resource bars */
-.res-bar{{display:inline-flex;align-items:center;gap:6px}}.res-bar-track{{width:60px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}}.res-bar-fill{{height:100%;border-radius:3px}}
-/* Rules strip */
-.rules-strip{{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}}
-.rule-chip{{display:inline-flex;align-items:center;gap:4px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;color:#3730a3;white-space:nowrap}}
-</style></head><body><div class="wrap">
-
-<!-- Header -->
-<div class="header">
-  <div class="header-left">
-    <h1>📊 Дашборд проектов</h1>
-    <span class="chip server">🇩🇪 Server1 · 📡 {esc(s['ip'])}</span>
-    <span class="chip ok">🟢 В работе · до {esc(s['valid_until'])}</span>
-  </div>
-  <div class="header-chips">
-    <span class="chip">💾 <b>{esc(resources['memory']['free'])}</b> / {esc(resources['memory']['total'])}</span>
-    <span class="chip">💿 <b>{esc(resources['disk']['free'])}</b> / {esc(resources['disk']['total'])}</span>
-    <span class="chip">🕐 {esc(s['generated'])}</span>
-    <a href="/settings" class="chip" id="settings-link" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;text-decoration:none">⚙️ Настройки</a>
-  </div>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--s:#12121a;--s2:#1a1a25;--s3:#22222f;--b:#2a2a3a;--b2:#3a3a4a;--t:#e8e8f0;--t2:#a0a0b8;--t3:#6a6a80;--accent:#6366f1;--accent2:#818cf8;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--pink:#ec4899;--purple:#a855f7;--r:10px;--font:'Inter',system-ui,sans-serif}
+html{background:var(--bg);color:var(--t);font-family:var(--font);font-size:13px;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+.dash{max-width:1100px;margin:0 auto;padding:16px;transition:opacity .4s}
+.dash.on{opacity:1}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--b)}
+.hdr h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.hdr-r{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.st{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:12px 14px}
+.st-l{color:var(--t3);font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:4px}
+.st-v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.st-v.a{color:var(--accent2)}.st-v.g{color:var(--green)}.st-v.p{color:var(--pink)}.st-v.o{color:var(--orange)}
+.sys{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pill{font-size:10px;color:var(--t2);padding:4px 8px;background:var(--s);border:1px solid var(--b);border-radius:16px;display:flex;align-items:center;gap:4px;font-weight:500}
+.pill .d{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.d.g{background:var(--green)}.d.r{background:var(--red)}.d.o{background:var(--orange)}
+.pill b{color:var(--t);font-weight:600}
+.sec{margin-bottom:14px}
+.tw{background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;padding:7px 10px;color:var(--t3);font-size:9px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;background:var(--s2);border-bottom:1px solid var(--b)}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--b);font-size:12px;vertical-align:middle;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .12s;cursor:pointer}
+tbody tr:hover{background:var(--s2)}
+.sec-hd{background:var(--s2)!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase;letter-spacing:.07em;color:var(--t2)!important;padding:8px 10px!important;cursor:default!important}
+.sec-cnt{color:var(--t3);font-weight:400;margin-left:4px}
+.nm{font-weight:600}
+.cn{font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.bar{width:60px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle}
+.bar-f{height:100%;border-radius:3px}
+.bar-f.pk{background:linear-gradient(90deg,var(--pink),#f472b6)}
+.bar-f.pu{background:linear-gradient(90deg,var(--purple),#c084fc)}
+.bar-f.ac{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.pct{font-weight:700;font-size:11px;font-variant-numeric:tabular-nums}
+.foot{margin-top:14px;padding:10px 14px;background:var(--s);border:1px solid var(--b);border-radius:var(--r);display:flex;justify-content:space-between;font-size:10px;color:var(--t3)}
+.foot b{color:var(--t2)}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.st-v{font-size:20px}.hdr{flex-direction:column;align-items:flex-start;gap:6px}.tw{overflow-x:auto}table{min-width:540px}.dash{padding:12px}}
+</style></head>
+<body>
+<div class="dash" id="d">
+<div class="hdr"><h1>Автоматизация</h1><div class="hdr-r"><span id="clk"></span><span class="dot"></span></div></div>
+<div class="stats">
+<div class="st"><div class="st-l">Постов всего</div><div class="st-v a">""" + esc(total_posts_all) + """</div></div>
+<div class="st"><div class="st-l">Проектов</div><div class="st-v g">""" + str(project_count) + """</div></div>
+<div class="st"><div class="st-l">Сегодня</div><div class="st-v p">""" + esc(total_posts_today) + """</div></div>
+<div class="st"><div class="st-l">Ошибки</div><div class="st-v """ + ('o' if total_errors else 'g') + '">' + str(total_errors) + """</div></div>
 </div>
-
-<!-- KPI Summary -->
-<div class="kpi-row">
-  {kpi_card('📁', 'Всего аккаунтов', str(total_accounts), 'активных проектов: 4')}
-  {kpi_card('📤', 'Постов сегодня', str(total_posts_today), 'запланировано на сегодня')}
-  {kpi_card('✅', 'Опубликовано всего', str(total_published_all), 'за всё время')}
-  {kpi_card('⚠️', 'Ошибки', str(total_errors), 'требуют внимания', 'err' if total_errors else 'ok')}
-  {kpi_card('🎬', 'Unicaizer', f"{esc(uni['unique_today'])}", f"визитов сегодня · {esc(uni['telegram_users'])} TG юзеров")}
-</div>
-
-<!-- Cron -->
-<div class="card">
-  <div class="card-head"><h2>⏰ Cron всех проектов</h2><span class="card-meta">{len(cron_rows)} задач</span></div>
-  <div class="card-body">
-    <details>
-      <summary>Показать таблицу cron-задач</summary>
-      <div class="table-wrap" style="margin-top:8px">
-        <table class="data-table"><thead><tr><th>Задача</th><th>Вкл.</th><th>Расписание</th><th>Последний запуск</th><th>Следующий запуск</th><th>Статус</th></tr></thead><tbody>{cron_html}</tbody></table>
-      </div>
-    </details>
-  </div>
-</div>
-
-<!-- Wibes -->
-<div class="card">
-  <div class="card-head"><h2>🎥 Проект Wibes</h2><span class="card-meta">{len(blocks['wibes']['rows'])} аккаунтов · автозагрузка Wibes.ru</span></div>
-  <div class="card-body">{rules_strip('wibes')}{metric_row(blocks['wibes'])}{project_table(blocks['wibes'])}</div>
-</div>
-
-<!-- Creative Fabrica -->
-<div class="card">
-  <div class="card-head"><h2>📌 Creative Fabrica</h2><span class="card-meta">{len(blocks['creative']['rows'])} аккаунтов · Pinterest/WoopSocial</span></div>
-  <div class="card-body">{rules_strip('creative_fabrica')}{metric_row(blocks['creative'])}{project_table(blocks['creative'])}</div>
-</div>
-
-<!-- Ritm -->
-<div class="card">
-  <div class="card-head"><h2>🛒 Автопостинг Ритм</h2><span class="card-meta">{len(blocks['ritm']['rows'])} аккаунтов · Яндекс Ритм</span></div>
-  <div class="card-body">{rules_strip('ritm')}{metric_row(blocks['ritm'])}{project_table(blocks['ritm'])}</div>
-</div>
-
-<!-- Unicaizer -->
-<div class="card">
-  <div class="card-head"><h2>🎬 Unicaizer</h2><span class="card-meta">SaaS · обработка видео · unicaizer.ru</span></div>
-  <div class="card-body">{rules_strip('unicaizer')}{uni_html}</div>
-</div>
-
+<div class="sys">""" + sys_pills + """</div>
+<div class="sec"><div class="tw">
+<table>
+<thead><tr><th>Проект</th><th style="text-align:center">Всего</th><th style="text-align:center">Сегодня</th><th style="text-align:center">План</th><th>Прогресс</th><th style="text-align:right">%</th><th style="text-align:center">След.</th></tr></thead>
+<tbody>
+""" + build_rows() + """
+</tbody>
+</table>
+</div></div>
+<div class="foot"><div><b>Автообновление</b> каждые 2 мин</div><div id="ft"></div></div>
 </div>
 <script>
-// On GitHub Pages, /settings doesn't exist — redirect to repo editor
-if (location.hostname.includes('github.io')) {{
-  var sl = document.getElementById('settings-link');
-  if (sl) sl.href = 'https://github.com/olegmat74/Dashboard_ALL/edit/main/posting_rules.json';
-}}
-setTimeout(()=>location.reload(),120000)
+function clk(){var n=new Date();document.getElementById('clk').textContent=n.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' \\u00b7 '+n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});document.getElementById('ft').textContent=n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+clk();setInterval(clk,1000);setTimeout(function(){location.reload()},120000);
 </script>
 </body></html>"""
 
 
 def render_settings() -> str:
-    rules = load_posting_rules()
-    project_order = ['wibes', 'creative_fabrica', 'ritm', 'unicaizer']
-    icons = {'wibes': '🎥', 'creative_fabrica': '📌', 'ritm': '🛒', 'unicaizer': '🎬'}
-
-    cards = []
-    for key in project_order:
-        r = rules.get(key, {})
-        title = r.get('title', key)
-        icon = icons.get(key, '📁')
-        time_window = r.get('time_window', '')
-        posts_per_day = r.get('posts_per_day', '')
-        interval_min = r.get('interval_min', 0)
-        rules_list = r.get('rules', [])
-        rules_text = '\n'.join(rules_list) if rules_list else ''
-
-        cards.append(f"""
-<div class="card" id="card-{key}">
-  <div class="card-head"><h2>{icon} {esc(title)}</h2><span class="card-meta">правила постинга</span></div>
-  <div class="card-body">
-    <form class="rules-form" data-project="{key}">
-      <div class="form-grid">
-        <div class="form-field">
-          <label>Временное окно</label>
-          <input type="text" name="time_window" value="{esc(time_window)}" placeholder="10:00-22:00">
-        </div>
-        <div class="form-field">
-          <label>Постов в день</label>
-          <input type="text" name="posts_per_day" value="{esc(posts_per_day)}" placeholder="3-5">
-        </div>
-        <div class="form-field">
-          <label>Мин. интервал (мин)</label>
-          <input type="number" name="interval_min" value="{esc(interval_min)}" placeholder="120" min="0">
-        </div>
-      </div>
-      <div class="form-field" style="margin-top:10px">
-        <label>Правила (по строке)</label>
-        <textarea name="rules" rows="6" placeholder="Одно правило на строку">{esc(rules_text)}</textarea>
-      </div>
-      <button type="submit" class="btn-save">Сохранить</button>
-      <span class="save-status" id="status-{key}"></span>
-    </form>
-  </div>
-</div>""")
-
-    cards_html = '\n'.join(cards)
-
-    return f"""<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Настройки правил постинга — Дашборд</title>
-<style>
-:root{{--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#1e293b;--text2:#64748b;--accent:#3b82f6;--green:#10b981;--green-bg:#d1fae5;--red:#ef4444;--red-bg:#fee2e2;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06)}}
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}}
-a{{color:var(--accent);text-decoration:none}}a:hover{{text-decoration:underline}}
-.wrap{{max-width:1000px;margin:0 auto;padding:16px 20px}}
-.header{{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;box-shadow:var(--shadow);margin-bottom:16px}}
-.header h1{{font-size:20px;font-weight:600;color:#0f172a}}
-.back-link{{font-size:13px;font-weight:600;color:var(--accent)}}
-.card{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}}
-.card-head{{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:#fafbfc}}
-.card-head h2{{font-size:15px;font-weight:600;color:#0f172a}}
-.card-meta{{font-size:12px;color:var(--text2)}}
-.card-body{{padding:14px 18px}}
-.form-grid{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}}
-.form-field{{display:flex;flex-direction:column;gap:4px}}
-.form-field label{{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}}
-.form-field input,.form-field textarea{{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff}}
-.form-field input:focus,.form-field textarea:focus{{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}}
-.form-field textarea{{resize:vertical;font-family:'SF Mono',monospace;font-size:13px;line-height:1.6}}
-.btn-save{{margin-top:12px;padding:8px 20px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:background .15s}}
-.btn-save:hover{{background:#2563eb}}
-.save-status{{margin-left:10px;font-size:12px;font-weight:600}}
-.save-status.ok{{color:var(--green)}}.save-status.err{{color:var(--red)}}
-@media(max-width:700px){{.form-grid{{grid-template-columns:1fr}}}}
-</style></head><body><div class="wrap">
-<div class="header"><h1>⚙️ Настройки правил постинга</h1><a href="/" class="back-link">← Назад к дашборду</a></div>
-{cards_html}
-</div>
-<script>
-document.querySelectorAll('.rules-form').forEach(form => {{
-  form.addEventListener('submit', async e => {{
-    e.preventDefault();
-    const project = form.dataset.project;
-    const status = document.getElementById('status-' + project);
-    status.textContent = 'Сохранение...'; status.className = 'save-status';
-    const fd = new FormData(form);
-    const payload = {{
-      time_window: fd.get('time_window'),
-      posts_per_day: fd.get('posts_per_day'),
-      interval_min: parseInt(fd.get('interval_min')) || 0,
-      rules: fd.get('rules').split('\\n').map(s => s.trim()).filter(Boolean)
-    }};
-    try {{
-      const resp = await fetch('/api/rules/' + project, {{
-        method: 'POST',
-        headers: {{'Content-Type': 'application/json'}},
-        body: JSON.stringify(payload)
-      }});
-      const data = await resp.json();
-      if (data.ok) {{ status.textContent = '✅ Сохранено'; status.className = 'save-status ok'; }}
-      else {{ status.textContent = '❌ ' + (data.error || 'ошибка'); status.className = 'save-status err'; }}
-    }} catch(err) {{ status.textContent = '❌ сеть'; status.className = 'save-status err'; }}
-    setTimeout(() => {{ status.textContent = ''; status.className = 'save-status'; }}, 3000);
-  }});
-}});
-</script>
+    return """<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Настройки</title></head>
+<body style="background:#0a0a0f;color:#e8e8f0;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">
+<div style="text-align:center"><h2>⚙️ Настройки правил</h2><p style="color:#a0a0b8">Редактируйте файл <code>posting_rules.json</code> в репо</p>
+<a href="https://github.com/olegmat74/Dashboard_ALL/edit/main/posting_rules.json" style="color:#6366f1">Открыть на GitHub</a></div>
 </body></html>"""
-
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args: Any) -> None:
