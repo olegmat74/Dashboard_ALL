@@ -870,8 +870,12 @@ def render() -> str:
     def project_table(block: dict[str, Any]) -> str:
         rows = []
         for r in block['rows']:
-            rows.append(f"""<tr><td><span>{link_html(r['url'], r['name'])}</span></td></tr>""")
-        return f"""<div class="tablebox"><table><thead><tr><th>{esc(block['columns_first'])}</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"""
+            extra = ''
+            if block.get('site_column'):
+                extra = f'<td>{link_html(r.get("site_url", "") or "")}</td>'
+            rows.append(f"""<tr><td><span>{link_html(r['url'], r['name'])}</span></td><td class="num">{esc(r.get('planned_today', '—'))}</td><td class="num">{esc(r.get('published', '—'))}</td><td class="num">{esc(r.get('remaining_today', '—'))}</td><td>{esc(r.get('next_time', '—'))}</td>{extra}<td>{esc(r.get('status', '—'))}</td></tr>""")
+        site_th = f'<th>{esc(block["site_column"])}</th>' if block.get('site_column') else ''
+        return f"""<div class="tablebox"><table><thead><tr><th>{esc(block['columns_first'])}</th><th>Запланировано</th><th>Опубликовано</th><th>Осталось</th><th>Следующий</th>{site_th}<th>Статус</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"""
 
     cron_html = ''.join(f"""
       <tr><td>{esc(r['profile'])}</td><td>{esc(r['enabled'])}</td><td>{esc(r['schedule'])}</td><td>{esc(r['last'])}</td><td>{esc(r['next'])}</td><td>{esc(r['status'])}</td></tr>""" for r in cron_rows) or '<tr><td colspan="6">Cron задач нет</td></tr>'
