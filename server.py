@@ -860,11 +860,11 @@ def render() -> str:
     def metric_cards(block: dict[str, Any]) -> str:
         return f"""
         <div class="mini-stats">
-          <div><span>Ошибки</span><b>{esc(block['errors'])}</b></div>
-          <div><span>Всего опубликованных постов</span><b>{esc(block['total_published'])}</b></div>
-          <div><span>Всего постов за всё время</span><b>{esc(block['total_posts_all'])}</b></div>
-          <div><span>Постов за сегодня</span><b>{esc(block['total_posts_today'])}</b></div>
-          <div><span>Статус</span><b>{esc(block['status'])}</b></div>
+          <div><span>Ошибки</span><span>{esc(block['errors'])}</span></div>
+          <div><span>Всего опубликованных постов</span><span>{esc(block['total_published'])}</span></div>
+          <div><span>Всего постов за всё время</span><span>{esc(block['total_posts_all'])}</span></div>
+          <div><span>Постов за сегодня</span><span>{esc(block['total_posts_today'])}</span></div>
+          <div><span>Статус</span><span>{esc(block['status'])}</span></div>
         </div>"""
 
     def project_table(block: dict[str, Any]) -> str:
@@ -874,7 +874,7 @@ def render() -> str:
             site_cell = f"<td>{link_html(r.get('site_url',''), 'сайт')}</td>" if block.get('site_column') else ''
             rows.append(f"""
             <tr>
-              <td><b>{link_html(r['url'], r['name'])}</b></td>
+              <td><span>{link_html(r['url'], r['name'])}</span></td>
               {site_cell}
               <td class="num">{esc(r['planned_today'])}</td>
               <td class="num">{esc(r['published'])}</td>
@@ -893,20 +893,20 @@ def render() -> str:
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Дашборд всех проектов</title>
 <style>
-*{{box-sizing:border-box}}body{{margin:0;font-family:'Inter','SF Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#111827;font-size:16px;line-height:1.6}}a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline;color:#1d4ed8}}.wrap{{max-width:1500px;margin:0 auto;padding:20px;text-align:left}}header{{display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:14px;padding:10px 18px;box-shadow:0 1px 4px #0000000a;border:1px solid #e2e8f0}}.header-row{{display:flex;align-items:center;gap:10px;flex-wrap:wrap}}h1{{margin:0;font-size:26px;font-weight:500;letter-spacing:-.03em;color:#0f172a}}.muted{{color:#94a3b8}}h2{{margin:0 0 8px;font-size:17px;font-weight:500;color:#0f172a;display:flex;align-items:center;gap:6px}}.stat,.panel{{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;box-shadow:0 1px 3px #00000006;width:100%;border-left:3px solid #d1d9e6;margin-bottom:10px;box-sizing:border-box}}.panel{{border-left-color:#bfd4f0}}.stat span,.mini-stats span{{display:block;color:#64748b;font-size:12px;font-weight:500}}.stat b{{font-size:22px;color:#0f172a}}.mini-stats{{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:8px;margin:8px 0 10px}}.mini-stats>div{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}}.mini-stats b{{font-size:17px;color:#0f172a}}table{{width:auto;border-collapse:separate;border-spacing:0;font-size:14px}}th,td{{text-align:left;border-bottom:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;white-space:nowrap}}th{{color:#64748b;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc;position:sticky;top:0;z-index:1}}td b{{display:block;font-weight:500}}td a{{font-weight:600}}.num{{text-align:center;font-weight:500;white-space:nowrap}}details summary{{cursor:pointer;color:#2563eb;font-weight:500;font-size:14px;margin-bottom:4px}}.tablebox{{display:block;overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0;background:#fff;max-width:100%}}.unigrid{{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px}}.unigrid>div{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}}.unigrid span{{display:block;color:#64748b;font-size:12px;font-weight:500}}.unigrid b{{font-size:17px;color:#0f172a}}@media(max-width:900px){{.topgrid,.mini-stats,.unigrid{{grid-template-columns:1fr 1fr}}table{{min-width:auto}}.wrap{{padding:12px}}}}
+*{{box-sizing:border-box}}body{{margin:0;font-family:'Inter','SF Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#111827;font-size:16px;line-height:1.6}}a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline;color:#1d4ed8}}.wrap{{max-width:1500px;margin:0 auto;padding:20px;text-align:left}}header{{display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:14px;padding:10px 18px;box-shadow:0 1px 4px #0000000a;border:1px solid #e2e8f0}}.header-row{{display:flex;align-items:center;gap:10px;flex-wrap:wrap}}h1{{margin:0;font-size:26px;font-weight:500;letter-spacing:-.03em;color:#0f172a}}.muted{{color:#94a3b8}}h2{{margin:0 0 8px;font-size:17px;font-weight:500;color:#0f172a;display:flex;align-items:center;gap:6px}}.stat,.panel{{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;box-shadow:0 1px 3px #00000006;width:100%;border-left:3px solid #d1d9e6;margin-bottom:10px;box-sizing:border-box}}.panel{{border-left-color:#bfd4f0}}.stat span,.mini-stats span{{display:block;color:#64748b;font-size:12px;font-weight:500}}.stat b{{font-size:22px;color:#0f172a}}.mini-stats{{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:8px;margin:8px 0 10px}}.mini-stats>div{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}}.mini-stats b{{font-size:17px;color:#0f172a}}table{{width:auto;border-collapse:separate;border-spacing:0;font-size:14px}}th,td{{text-align:left;border-bottom:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;white-space:nowrap}}th{{color:#64748b;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc;position:sticky;top:0;z-index:1}}td b{{display:block;font-weight:500}}td a{{font-weight:500}}.num{{text-align:center;font-weight:500;white-space:nowrap}}details summary{{cursor:pointer;color:#2563eb;font-weight:500;font-size:14px;margin-bottom:4px}}.tablebox{{display:block;overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0;background:#fff;max-width:100%}}.unigrid{{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px}}.unigrid>div{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}}.unigrid span{{display:block;color:#64748b;font-size:12px;font-weight:500}}.unigrid b{{font-size:17px;color:#0f172a}}@media(max-width:900px){{.topgrid,.mini-stats,.unigrid{{grid-template-columns:1fr 1fr}}table{{min-width:auto}}.wrap{{padding:12px}}}}
 </style></head><body><div class="wrap">
-<header><div class="header-row"><h1 style="margin:0;font-size:26px;white-space:nowrap">Дашборд всех проектов</h1><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💾 <b>{esc(resources['memory']['free'])}</b> из {esc(resources['memory']['total'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💿 <b>{esc(resources['disk']['free'])}</b> из {esc(resources['disk']['total'])}</span><span style="background:#e1ebfa;border:1px solid #b8cbe8;border-radius:8px;padding:3px 16px;white-space:nowrap;font-size:13px;color:#1e3a6b">🇩🇪 Server1 · 📡 {esc(s['ip'])} · 🟢 В работе · Действует до {esc(s['valid_until'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">Обновлено {esc(s['generated'])}</span></div></header>
+<header><div class="header-row"><h1 style="margin:0;font-size:26px;white-space:nowrap">Дашборд всех проектов</h1><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💾 <span>{esc(resources['memory']['free'])}</span> из {esc(resources['memory']['total'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💿 <span>{esc(resources['disk']['free'])}</span> из {esc(resources['disk']['total'])}</span><span style="background:#e1ebfa;border:1px solid #b8cbe8;border-radius:8px;padding:3px 16px;white-space:nowrap;font-size:13px;color:#1e3a6b">🇩🇪 Server1 · 📡 {esc(s['ip'])} · 🟢 В работе · Действует до {esc(s['valid_until'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">Обновлено {esc(s['generated'])}</span></div></header>
 <section class="panel"><details><summary style="cursor:pointer;color:#475569;font-weight:500;font-size:12px;padding:4px 0">Cron всех проектов</summary><div class="tablebox" style="margin-top:6px"><table><thead><tr><th>Профиль</th><th>Включен или выключен</th><th>Расписание</th><th>Последний запуск</th><th>Следующий запуск</th><th>Статус</th></tr></thead><tbody>{cron_html}</tbody></table></div></details></section>
 <section class="panel"><h2>Проект Wibes</h2>{metric_cards(blocks['wibes'])}{project_table(blocks['wibes'])}</section>
 <section class="panel"><h2>Проект Creative Fabrica</h2>{metric_cards(blocks['creative'])}{project_table(blocks['creative'])}</section>
 <section class="panel"><h2>Проект Ритм</h2>{metric_cards(blocks['ritm'])}{project_table(blocks['ritm'])}</section>
 <section class="panel"><h2>Проект Unicaizer</h2><div class="unigrid">
-  <div><span>Всего уникальных посетителей</span><b>{esc(uni['unique_total'])}</b></div>
-  <div><span>Уникальные посетители за сегодня</span><b>{esc(uni['unique_today'])}</b></div>
-  <div><span>Авторизованные в Telegram</span><b>{esc(uni['telegram_users'])}</b></div>
-  <div><span>Видео обрабатываются сейчас</span><b>{esc(uni['processing_now'])}</b></div>
-  <div><span>Ошибки</span><b>{esc(uni['errors'])}</b></div>
-  <div><span>Статус</span><b>{esc(uni['status'])}</b></div>
+  <div><span>Всего уникальных посетителей</span><span>{esc(uni['unique_total'])}</span></div>
+  <div><span>Уникальные посетители за сегодня</span><span>{esc(uni['unique_today'])}</span></div>
+  <div><span>Авторизованные в Telegram</span><span>{esc(uni['telegram_users'])}</span></div>
+  <div><span>Видео обрабатываются сейчас</span><span>{esc(uni['processing_now'])}</span></div>
+  <div><span>Ошибки</span><span>{esc(uni['errors'])}</span></div>
+  <div><span>Статус</span><span>{esc(uni['status'])}</span></div>
 </div></section></div>
 </div><script>setTimeout(()=>location.reload(),60000)</script></body></html>"""
 
