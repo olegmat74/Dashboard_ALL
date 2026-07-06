@@ -950,7 +950,20 @@ def render() -> str:
             'daily-unicaizer-seo-3-articles': 'Unicaizer: SEO',
         }
         label = name_map.get(name, name)
-        cron_pills.append('<span class="pill"><span class="d ' + dot + '"></span>' + esc(label) + ' <b>' + esc(sched) + '</b></span>')
+        # Translate schedule to Russian
+        sched_ru = sched
+        if sched == 'every 30m':
+            sched_ru = 'каждые 30 мин'
+        elif sched == 'every 360m':
+            sched_ru = 'каждые 6 часов'
+        elif sched == '0 4 * * *':
+            sched_ru = 'ежедневно 09:00 ЕКБ'
+        elif sched == '0 9 * * *':
+            sched_ru = 'ежедневно 09:00 ЕКБ'
+        elif sched and sched.startswith('once in '):
+            mins = sched.replace('once in ', '').replace('m', '')
+            sched_ru = f'раз в {mins} мин' if mins.isdigit() else sched
+        cron_pills.append('<span class="pill"><span class="d ' + dot + '"></span>' + esc(label) + ' <b>' + esc(sched_ru) + '</b></span>')
 
     sys_pills = (
         '<span class="pill"><span class="d g"></span>Диск ' + str(disk['pct_used']) + '%</span>'
