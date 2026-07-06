@@ -763,6 +763,11 @@ def build_creative_block() -> dict[str, Any]:
 
 def build_ritm_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
+    # business_id → profile URL mapping from core/config.py
+    ritm_profiles = {
+        'lovi_nahodki': {'url': 'https://yandex.ru/rythm/profile/12878846631190760930', 'login': 'olegmat174'},
+        'pokypay_online': {'url': 'https://yandex.ru/rythm/profile/17608531351218553275', 'login': 'reginam74'},
+    }
     rows = []
     total_published = total_all = total_today = 0
     for name in ['lovi_nahodki', 'pokypay_online']:
@@ -778,7 +783,9 @@ def build_ritm_block() -> dict[str, Any]:
         remaining = max(0, planned - published_today) if is_today else 'план устарел'
         next_time = slots[idx] if is_today and idx < len(slots) else ('план устарел' if not is_today else '—')
         total_published += len(used); total_all += len(used) + (remaining if isinstance(remaining, int) else 0); total_today += planned
-        rows.append(metrics_row(name, 'https://yandex.ru/rythm', planned if is_today else f"0 ({st.get('date','—')})", len(used), remaining, next_time, status_label('ok' if is_today else 'warn')))
+        profile = ritm_profiles.get(name, {})
+        display_name = f"{name} ({profile.get('login', '')})" if profile.get('login') else name
+        rows.append(metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned if is_today else f"0 ({st.get('date','—')})", len(used), remaining, next_time, status_label('ok' if is_today else 'warn')))
     return {
         'title': 'Проект Ритм', 'columns_first': 'Название канала', 'site_column': None, 'rows': rows,
         'errors': 0, 'total_published': total_published, 'total_posts_all': total_all, 'total_posts_today': total_today,
@@ -1119,7 +1126,7 @@ details summary::before{{content:'▸ ';transition:transform .15s;display:inline
 </div>
 
 </div>
-<script>setTimeout(()=>location.reload(),60000)</script>
+<script>setTimeout(()=>location.reload(),120000)</script>
 </body></html>"""
 
 
