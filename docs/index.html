@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Единый дашборд проектов</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0b1020;color:#eef2ff}a{color:#8bd3ff;text-decoration:none}a:hover{text-decoration:underline}.wrap{max-width:1320px;margin:0 auto;padding:22px}header{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;margin-bottom:18px}h1{margin:0;font-size:28px;letter-spacing:-.04em}h2{margin:0;font-size:19px}p{margin:4px 0 0;color:#98a2b3}.summary{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin-bottom:14px}.stat{background:#111936;border:1px solid #26304f;border-radius:16px;padding:14px}.stat span,.mini span{display:block;color:#98a2b3;font-size:12px}.stat b{font-size:22px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{background:#111936;border:1px solid #26304f;border-radius:18px;padding:16px;box-shadow:0 10px 35px #0005}.card.ok{border-color:#1d7d55}.card.warn{border-color:#a87516}.card.bad{border-color:#9d2f3b}.top{display:flex;justify-content:space-between;gap:10px;margin-bottom:12px}.badge{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-weight:800;font-size:12px}.badge.ok{background:#0d442f;color:#70ffbd}.badge.warn{background:#4a3109;color:#ffd27a}.badge.bad{background:#51101a;color:#ff94a3}.badge.none{background:#25304b;color:#aeb8d0}.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.mini>div{background:#0c132a;border:1px solid #222c49;border-radius:12px;padding:10px}.mini b{font-size:15px}.line{font-size:13px;color:#d9e2ff;margin:8px 0;overflow-wrap:anywhere}code{background:#070b17;border:1px solid #1d2744;border-radius:7px;padding:2px 5px;color:#d9e6ff}.chip{display:inline-block;background:#0c132a;border:1px solid #222c49;border-radius:999px;padding:4px 8px;margin:2px}.sep,.muted{color:#7c879d}details{border-top:1px solid #26304f;margin-top:10px;padding-top:9px}summary{cursor:pointer;color:#c8d4ff;font-weight:700}ul{margin:8px 0 0;padding-left:18px}li{margin:5px 0}li span,li em{color:#98a2b3;margin-left:8px}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}th,td{text-align:left;border-bottom:1px solid #26304f;padding:7px;vertical-align:top}th{color:#98a2b3;font-weight:600}.proc{display:grid;gap:6px;margin-top:8px}.side{background:#111936;border:1px solid #26304f;border-radius:18px;padding:16px;margin-top:14px}.refresh{background:#2563eb;color:white;border:0;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}@media(max-width:900px){.cards,.summary{grid-template-columns:1fr}header{display:block}}
+</style></head>
+<body>
+<div style="max-width:1320px;margin:0 auto 14px;padding:12px 18px;border:1px solid #a87516;background:#4a3109;color:#ffd27a;border-radius:14px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
+  <b>GitHub Pages версия:</b> это статический снимок. Живые процессы/cron/диск обновляются только на серверной версии.
+</div>
+<div class="wrap">
+<header><div><h1>Единый дашборд проектов</h1><p>Сервер: server1.ptr.network • обновлено: 06.07.2026 09:24:37</p></div><button class="refresh" onclick="location.reload()">Обновить</button></header>
+<div class="summary">
+  <div class="stat"><span>Проектов</span><b>4</b></div>
+  <div class="stat"><span>ОК</span><b>3</b></div>
+  <div class="stat"><span>Внимание</span><b>1</b></div>
+  <div class="stat"><span>Проблемы</span><b>0</b></div>
+  <div class="stat"><span>Диск /</span><b>27%</b><span>свободно 41.9 ГБ</span></div>
+</div>
+<main class="cards">
+        <section class="card ok">
+          <div class="top">
+            <div><h2>UNICAIZER</h2><p>SaaS / обработка видео</p></div>
+            <span class="badge ok">ОК</span>
+          </div>
+          <div class="grid mini">
+            <div><span>Профиль</span><b>unicaizer</b></div>
+            <div><span>Файлы</span><b>125.7 МБ</b></div>
+            <div><span>Видео</span><b>14</b></div>
+            <div><span>Cron</span><b>1/1</b></div>
+            <div><span>Ошибки cron</span><b>0</b></div>
+            <div><span>Изменения</span><b>19 мин назад</b></div>
+          </div>
+          <div class="line"><b>Статус:</b> всё нормально</div>
+          <div class="line"><b>Путь:</b> <code>/home/hermes/.hermes/profiles/unicaizer/workspace/unicaizer-app</code></div>
+          <div class="line"><b>Ссылки:</b> <a href='https://unicaizer.ru' target='_blank'>Открыть сайт</a> <span class="sep">•</span> local: <a href='http://127.0.0.1:8000' target='_blank'>http://127.0.0.1:8000</a></div>
+          <div class="line"><b>Health:</b> <span class="badge ok">ОК</span> <code>{&quot;status&quot;:&quot;ok&quot;}</code></div>
+          <div class="line"><b>Services:</b> <span class='chip'>unicaizer-app-web.service: <b>active</b></span><span class='chip'>unicaizer-app-worker.service: <b>active</b></span></div>
+          <details><summary>Последние файлы</summary><ul><li><b>unicalizator.sqlite3-shm</b> <span>13 мин назад</span> <em>32.0 КБ</em></li><li><b>unicalizator.sqlite3-wal</b> <span>13 мин назад</span> <em>3.9 МБ</em></li><li><b>unicalizator.log</b> <span>18 мин назад</span> <em>723.8 КБ</em></li><li><b>voice_replace.log</b> <span>18 мин назад</span> <em>3.2 КБ</em></li></ul></details>
+          <details><summary>Процессы</summary><div class="proc"><code>31945 /home/hermes/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main --profile unicaizer gateway run</code><code>42680 /home/hermes/.hermes/profiles/unicaizer/workspace/unicaizer-app/.venv/bin/python /home/hermes/.hermes/profiles/unicaizer/workspace/unicaizer-app/.venv/bin/uvicorn server:app </code><code>42681 /home/hermes/.hermes/profiles/unicaizer/workspace/unicaizer-app/.venv/bin/python /home/hermes/.hermes/profiles/unicaizer/workspace/unicaizer-app/standalone_worker.py</code></div></details>
+          <details><summary>Cron задачи</summary><table><thead><tr><th>Задача</th><th>Вкл</th><th>Статус</th><th>Был</th><th>След.</th></tr></thead><tbody><tr><td>daily-unicaizer-seo-3-articles</td><td>да</td><td>ok</td><td>06.07 09:07</td><td>07.07 09:00</td></tr></tbody></table></details>
+        </section>
+        
+        <section class="card warn">
+          <div class="top">
+            <div><h2>Wibes Automation</h2><p>автозагрузка/обработка Wibes</p></div>
+            <span class="badge warn">Внимание</span>
+          </div>
+          <div class="grid mini">
+            <div><span>Профиль</span><b>wibes</b></div>
+            <div><span>Файлы</span><b>221.6 МБ</b></div>
+            <div><span>Видео</span><b>12</b></div>
+            <div><span>Cron</span><b>2/2</b></div>
+            <div><span>Ошибки cron</span><b>2</b></div>
+            <div><span>Изменения</span><b>1 ч назад</b></div>
+          </div>
+          <div class="line"><b>Статус:</b> ошибки cron: 2</div>
+          <div class="line"><b>Путь:</b> <code>/home/hermes/.hermes/profiles/wibes/workspace/wibes-automation</code></div>
+          <div class="line"><b>Ссылки:</b> <span class="muted">нет публичной ссылки</span> <span class="sep">•</span> local: <span class="muted">—</span></div>
+          <div class="line"><b>Health:</b> <span class="badge none">—</span> <code>—</code></div>
+          <div class="line"><b>Services:</b> <span class="muted">нет systemd сервисов</span></div>
+          <details><summary>Последние файлы</summary><ul><li><b>browser_session.json</b> <span>57 мин назад</span> <em>68.7 КБ</em></li><li><b>upload_after_publish.png</b> <span>57 мин назад</span> <em>217.4 КБ</em></li><li><b>upload_before_publish.png</b> <span>57 мин назад</span> <em>376.4 КБ</em></li><li><b>process_20260706_082421.log</b> <span>58 мин назад</span> <em>21.3 КБ</em></li></ul></details>
+          <details><summary>Процессы</summary><div class="proc"><code>105598 /home/hermes/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main --profile wibes gateway run</code></div></details>
+          <details><summary>Cron задачи</summary><table><thead><tr><th>Задача</th><th>Вкл</th><th>Статус</th><th>Был</th><th>След.</th></tr></thead><tbody><tr><td>wibes-daily-download</td><td>да</td><td>error</td><td>06.07 04:00</td><td>07.07 04:00</td></tr><tr><td>wibes-morning-report</td><td>да</td><td>error</td><td>06.07 04:00</td><td>07.07 04:00</td></tr></tbody></table></details>
+        </section>
+        
+        <section class="card ok">
+          <div class="top">
+            <div><h2>Autopost Ritm</h2><p>автопостинг / витрины</p></div>
+            <span class="badge ok">ОК</span>
+          </div>
+          <div class="grid mini">
+            <div><span>Профиль</span><b>autopost_ritm</b></div>
+            <div><span>Файлы</span><b>4.3 ГБ</b></div>
+            <div><span>Видео</span><b>53</b></div>
+            <div><span>Cron</span><b>0/1</b></div>
+            <div><span>Ошибки cron</span><b>0</b></div>
+            <div><span>Изменения</span><b>17 ч назад</b></div>
+          </div>
+          <div class="line"><b>Статус:</b> всё нормально</div>
+          <div class="line"><b>Путь:</b> <code>/home/hermes/.hermes/profiles/autopost_ritm/workspace/ritm</code></div>
+          <div class="line"><b>Ссылки:</b> <span class="muted">нет публичной ссылки</span> <span class="sep">•</span> local: <span class="muted">—</span></div>
+          <div class="line"><b>Health:</b> <span class="badge none">—</span> <code>—</code></div>
+          <div class="line"><b>Services:</b> <span class="muted">нет systemd сервисов</span></div>
+          <details><summary>Последние файлы</summary><ul><li><b>system.log</b> <span>14 ч назад</span> <em>2.2 КБ</em></li><li><b>agent.log</b> <span>14 ч назад</span> <em>26.4 КБ</em></li><li><b>state.json</b> <span>14 ч назад</span> <em>218 Б</em></li><li><b>pokypay_online.log</b> <span>14 ч назад</span> <em>9.2 КБ</em></li></ul></details>
+          <details><summary>Процессы</summary><div class="proc"><code>66433 /home/hermes/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main --profile autopost_ritm gateway run</code></div></details>
+          <details><summary>Cron задачи</summary><table><thead><tr><th>Задача</th><th>Вкл</th><th>Статус</th><th>Был</th><th>След.</th></tr></thead><tbody><tr><td>YRE Engine v2</td><td>нет</td><td>ok</td><td>05.07 19:22</td><td>—</td></tr></tbody></table></details>
+        </section>
+        
+        <section class="card ok">
+          <div class="top">
+            <div><h2>Creative Fabrica Autopost</h2><p>Pinterest/WoopSocial мониторинг</p></div>
+            <span class="badge ok">ОК</span>
+          </div>
+          <div class="grid mini">
+            <div><span>Профиль</span><b>autopost_creative_fabrica</b></div>
+            <div><span>Файлы</span><b>427.1 МБ</b></div>
+            <div><span>Видео</span><b>0</b></div>
+            <div><span>Cron</span><b>5/5</b></div>
+            <div><span>Ошибки cron</span><b>0</b></div>
+            <div><span>Изменения</span><b>1 мин назад</b></div>
+          </div>
+          <div class="line"><b>Статус:</b> всё нормально</div>
+          <div class="line"><b>Путь:</b> <code>/home/hermes/.hermes/profiles/autopost_creative_fabrica</code></div>
+          <div class="line"><b>Ссылки:</b> <span class="muted">нет публичной ссылки</span> <span class="sep">•</span> local: <span class="muted">—</span></div>
+          <div class="line"><b>Health:</b> <span class="badge none">—</span> <code>—</code></div>
+          <div class="line"><b>Services:</b> <span class="muted">нет systemd сервисов</span></div>
+          <details><summary>Последние файлы</summary><ul><li><b>ticker_last_success</b> <span>20 сек назад</span> <em>18 Б</em></li><li><b>ticker_heartbeat</b> <span>20 сек назад</span> <em>18 Б</em></li><li><b>.tick.lock</b> <span>20 сек назад</span> <em>0 Б</em></li><li><b>channel_directory.json</b> <span>1 мин назад</span> <em>747 Б</em></li></ul></details>
+          <details><summary>Процессы</summary><div class="proc"><code>31633 /home/hermes/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main --profile autopost_creative_fabrica gateway run</code></div></details>
+          <details><summary>Cron задачи</summary><table><thead><tr><th>Задача</th><th>Вкл</th><th>Статус</th><th>Был</th><th>След.</th></tr></thead><tbody><tr><td>WoopSocial Pinterest delivery status watcher</td><td>да</td><td>ok</td><td>06.07 04:57</td><td>06.07 10:57</td></tr><tr><td>S002 Junk Journal Vault WoopSocial status watcher</td><td>да</td><td>ok</td><td>06.07 06:43</td><td>06.07 12:43</td></tr><tr><td>S004 Planner Printable Studio WoopSocial status watcher</td><td>да</td><td>ok</td><td>06.07 07:20</td><td>06.07 13:20</td></tr><tr><td>S005 SVG Craft Cut Studio WoopSocial status watcher</td><td>да</td><td>ok</td><td>06.07 08:23</td><td>06.07 14:23</td></tr><tr><td>S006 StitchVault Studio WoopSocial status watcher — every 6h</td><td>да</td><td>ok</td><td>06.07 09:09</td><td>06.07 15:09</td></tr></tbody></table></details>
+        </section>
+        </main>
+<section class="side"><h2>Открытые порты</h2><table><thead><tr><th>Адрес</th><th>Процесс</th></tr></thead><tbody><tr><td>127.0.0.1:8123</td><td><code>((&quot;python3&quot;,pid=108652,fd=3))</code></td></tr><tr><td>127.0.0.1:8000</td><td><code>((&quot;uvicorn&quot;,pid=42680,fd=14))</code></td></tr><tr><td>127.0.0.1:9119</td><td><code>((&quot;hermes&quot;,pid=40277,fd=7))</code></td></tr><tr><td>*:80</td><td><code></code></td></tr><tr><td>*:443</td><td><code></code></td></tr></tbody></table></section>
+</div><script></script></body></html>
