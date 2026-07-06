@@ -30,8 +30,8 @@ def load_dashboard_html() -> str:
     spec.loader.exec_module(mod)
     html = mod.render()
     notice = '''
-<div style="max-width:1320px;margin:0 auto 14px;padding:12px 18px;border:1px solid #1d7d55;background:#0d442f;color:#70ffbd;border-radius:14px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif">
-  <b>GitHub Pages:</b> защищённый статический снимок. Автообновление с сервера каждые 2 минуты.
+<div style="max-width:1500px;margin:0 auto 0;padding:8px 14px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;color:#64748b;text-align:left">
+Автообновление с сервера каждые 2 минуты
 </div>
 '''
     html = html.replace('<body><div class="wrap">', '<body>' + notice + '<div class="wrap">')
