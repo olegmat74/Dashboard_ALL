@@ -1075,7 +1075,7 @@ details summary::before{{content:'▸ ';transition:transform .15s;display:inline
     <span class="chip">💾 <b>{esc(resources['memory']['free'])}</b> / {esc(resources['memory']['total'])}</span>
     <span class="chip">💿 <b>{esc(resources['disk']['free'])}</b> / {esc(resources['disk']['total'])}</span>
     <span class="chip">🕐 {esc(s['generated'])}</span>
-    <a href="/settings" class="chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;text-decoration:none">⚙️ Настройки</a>
+    <a href="/settings" class="chip" id="settings-link" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;text-decoration:none">⚙️ Настройки</a>
   </div>
 </div>
 
@@ -1126,7 +1126,14 @@ details summary::before{{content:'▸ ';transition:transform .15s;display:inline
 </div>
 
 </div>
-<script>setTimeout(()=>location.reload(),120000)</script>
+<script>
+// On GitHub Pages, /settings doesn't exist — redirect to repo editor
+if (location.hostname.includes('github.io')) {{
+  var sl = document.getElementById('settings-link');
+  if (sl) sl.href = 'https://github.com/olegmat74/Dashboard_ALL/edit/main/posting_rules.json';
+}}
+setTimeout(()=>location.reload(),120000)
+</script>
 </body></html>"""
 
 
