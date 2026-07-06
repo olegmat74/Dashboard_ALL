@@ -452,7 +452,7 @@ def last_published_from_rows(rows: list[dict[str, str]]) -> str:
 def link_html(url: str, label: str | None = None) -> str:
     if not url:
         return '<span class="muted">—</span>'
-    return f'<a href="{esc(url)}" target="_blank">{esc(label or short_url_label(url))}</a>'
+    return f'<a href="{esc(url)}" target="_blank" title="{esc(url)}">{esc(label or short_url_label(url))}</a>'
 
 
 def build_account_rows() -> list[dict[str, Any]]:
@@ -785,7 +785,12 @@ def build_unicaizer_block() -> dict[str, Any]:
         m['processing_now'] = cur.execute("select count(*) from jobs where status in ('queued','processing','running','started')").fetchone()[0] or 0
         m['errors'] = cur.execute("select count(*) from jobs where status='error' and updated_at >= ?", (today_ts,)).fetchone()[0] or 0
         hs, _ = http_health('http://127.0.0.1:8000/health')
-        m['status'] = status_label('ok' if hs == 'ok' else 'bad')
+        if hs != 'ok':
+            m['status'] = status_label('bad')
+        elif m['errors'] > 0:
+            m['status'] = status_label('warn')
+        else:
+            m['status'] = status_label('ok')
     except Exception:
         pass
     return {'title': 'Проект Unicaizer', **m}
@@ -851,57 +856,237 @@ def project_blocks() -> dict[str, Any]:
         'unicaizer': build_unicaizer_block(),
     }
 
+def status_badge(status_text: str) -> str:
+    """Professional status badge with color coding."""
+    s = (status_text or '').lower()
+    if 'ок' == s or 'в работе' in s:
+        cls = 's-ok'
+    elif 'внимание' in s or 'устарел' in s or 'warn' in s:
+        cls = 's-warn'
+    elif 'проблема' in s or 'ошибка' in s or 'bad' in s or 'error' in s:
+        cls = 's-bad'
+    else:
+        cls = 's-none'
+    return f'<span class="badge {cls}">{esc(status_text)}</span>'
+
+
+def progress_bar(published: int, total: int | str) -> str:
+    """Render a mini progress bar for today's plan completion."""
+    try:
+        t = int(total)
+        p = int(published)
+        if t <= 0:
+            return '<span class="muted">—</span>'
+        pct = min(100, round(p / t * 100))
+        return f'<div class="pbar"><div class="pbar-fill" style="width:{pct}%"></div><span class="pbar-text">{p}/{t}</span></div>'
+    except (ValueError, TypeError):
+        return f'<span class="muted">{esc(published)}/{esc(total)}</span>'
+
+
 def render() -> str:
     s = build_state()
     resources = system_resources()
     blocks = project_blocks()
     cron_rows = cron_all_rows()
 
-    def metric_cards(block: dict[str, Any]) -> str:
-        return f"""
-        <div class="mini-stats">
-          <div><span>Ошибки</span><span>{esc(block['errors'])}</span></div>
-          <div><span>Всего опубликованных постов</span><span>{esc(block['total_published'])}</span></div>
-          <div><span>Всего постов за всё время</span><span>{esc(block['total_posts_all'])}</span></div>
-          <div><span>Постов за сегодня</span><span>{esc(block['total_posts_today'])}</span></div>
-          <div><span>Статус</span><span>{esc(block['status'])}</span></div>
-        </div>"""
-
-    def project_table(block: dict[str, Any]) -> str:
-        rows = []
-        for r in block['rows']:
-            extra = ''
-            if block.get('site_column'):
-                extra = f'<td>{link_html(r.get("site_url", "") or "")}</td>'
-            rows.append(f"""<tr><td><span>{link_html(r['url'], r['name'])}</span></td><td class="num">{esc(r.get('planned_today', '—'))}</td><td class="num">{esc(r.get('published', '—'))}</td><td class="num">{esc(r.get('remaining_today', '—'))}</td><td>{esc(r.get('next_time', '—'))}</td>{extra}<td>{esc(r.get('status', '—'))}</td></tr>""")
-        site_th = f'<th>{esc(block["site_column"])}</th>' if block.get('site_column') else ''
-        return f"""<div class="tablebox"><table><thead><tr><th>{esc(block['columns_first'])}</th><th>Запланировано</th><th>Опубликовано</th><th>Осталось</th><th>Следующий</th>{site_th}<th>Статус</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"""
-
-    cron_html = ''.join(f"""
-      <tr><td>{esc(r['profile'])}</td><td>{esc(r['enabled'])}</td><td>{esc(r['schedule'])}</td><td>{esc(r['last'])}</td><td>{esc(r['next'])}</td><td>{esc(r['status'])}</td></tr>""" for r in cron_rows) or '<tr><td colspan="6">Cron задач нет</td></tr>'
+    # Aggregate KPIs
+    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() if k != 'unicaizer')
+    total_published_all = sum(b.get('total_published', 0) for k, b in blocks.items() if k != 'unicaizer')
+    total_errors = sum(b.get('errors', 0) for k, b in blocks.items() if k != 'unicaizer') + blocks['unicaizer'].get('errors', 0)
+    total_accounts = sum(len(b.get('rows', [])) for k, b in blocks.items() if k != 'unicaizer')
 
     uni = blocks['unicaizer']
+
+    def kpi_card(icon: str, label: str, value: str, sub: str = '', cls: str = '') -> str:
+        sub_html = f'<div class="kpi-sub">{esc(sub)}</div>' if sub else ''
+        return f'<div class="kpi {cls}"><div class="kpi-icon">{icon}</div><div class="kpi-body"><div class="kpi-val">{esc(value)}</div><div class="kpi-label">{esc(label)}</div>{sub_html}</div></div>'
+
+    def metric_row(block: dict[str, Any]) -> str:
+        cells = [
+            ('📊', 'Запланировано сегодня', block.get('total_posts_today', 0)),
+            ('✅', 'Опубликовано всего', block.get('total_published', 0)),
+            ('📁', 'Всего постов', block.get('total_posts_all', 0)),
+            ('⚠️', 'Ошибки', block.get('errors', 0)),
+        ]
+        cards = ''.join(f'<div class="mc"><span class="mc-l">{icon} {esc(label)}</span><span class="mc-v">{esc(val)}</span></div>' for icon, label, val in cells)
+        return f'<div class="metric-row">{cards}<div class="mc mc-status"><span class="mc-l">Статус</span>{status_badge(block.get("status", "—"))}</div></div>'
+
+    def project_table(block: dict[str, Any]) -> str:
+        rows_html = []
+        for r in block['rows']:
+            extra = f'<td>{link_html(r.get("site_url", "") or "")}</td>' if block.get('site_column') else ''
+            site_th = '<th>Сайт</th>' if block.get('site_column') else ''
+            name_cell = link_html(r['url'], r['name'])
+            # Progress bar: today's completion = (planned - remaining) / planned
+            try:
+                planned = int(r.get('planned_today', 0))
+                remaining = int(r.get('remaining_today', 0)) if isinstance(r.get('remaining_today'), (int, str)) and str(r.get('remaining_today', '')).isdigit() else 0
+                done = max(0, planned - remaining)
+                pbar = progress_bar(done, planned) if planned > 0 else '<span class="muted">—</span>'
+            except (ValueError, TypeError):
+                pbar = '<span class="muted">—</span>'
+            rows_html.append(f'<tr><td class="cell-name">{name_cell}</td><td class="num">{pbar}</td><td class="num">{esc(r.get("published", "—"))}</td><td class="num">{esc(r.get("remaining_today", "—"))}</td><td class="cell-next">{esc(r.get("next_time", "—"))}</td>{extra}<td>{status_badge(r.get("status", "—"))}</td></tr>')
+        site_th = '<th>Сайт</th>' if block.get('site_column') else ''
+        return f'<div class="table-wrap"><table class="data-table"><thead><tr><th>{esc(block["columns_first"])}</th><th>План / факт</th><th>Опубл.</th><th>Осталось</th><th>Следующий</th>{site_th}<th>Статус</th></tr></thead><tbody>{"".join(rows_html)}</tbody></table></div>'
+
+    cron_html = ''.join(f"""
+      <tr><td class="cell-name">{esc(r['name'])}</td><td><span class="tag {('tag-on' if r['enabled']=='да' else 'tag-off')}">{esc(r['enabled'])}</span></td><td class="mono">{esc(r['schedule'])}</td><td class="cell-next">{esc(r['last'])}</td><td class="cell-next">{esc(r['next'])}</td><td>{status_badge(r['status'])}</td></tr>""" for r in cron_rows) or '<tr><td colspan="6" class="empty-row">Cron задач нет</td></tr>'
+
+    # Unicaizer card
+    uni_html = f"""
+      <div class="uni-grid">
+        <div class="uni-cell"><span class="uni-l">👥 Всего посетителей</span><span class="uni-v">{esc(uni['unique_total'])}</span></div>
+        <div class="uni-cell"><span class="uni-l">👤 Уникальных сегодня</span><span class="uni-v">{esc(uni['unique_today'])}</span></div>
+        <div class="uni-cell"><span class="uni-l">💬 Telegram пользователей</span><span class="uni-v">{esc(uni['telegram_users'])}</span></div>
+        <div class="uni-cell"><span class="uni-l">🎬 В обработке сейчас</span><span class="uni-v">{esc(uni['processing_now'])}</span></div>
+        <div class="uni-cell"><span class="uni-l">⚠️ Ошибки сегодня</span><span class="uni-v {'err' if uni['errors'] else ''}">{esc(uni['errors'])}</span></div>
+        <div class="uni-cell"><span class="uni-l">Status</span>{status_badge(uni['status'])}</div>
+      </div>"""
+
+    mem_pct = resources['memory']['pct_free']
+    disk_pct = resources['disk']['pct_free']
+
     return f"""<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Дашборд всех проектов</title>
+<title>Дашборд проектов — Hermes</title>
 <style>
-*{{box-sizing:border-box}}body{{margin:0;font-family:'Inter','SF Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#111827;font-size:16px;line-height:1.6}}a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline;color:#1d4ed8}}.wrap{{max-width:1500px;margin:0 auto;padding:20px;text-align:left}}header{{display:flex;gap:4px;margin-bottom:14px;background:#fff;border-radius:14px;padding:10px 18px;box-shadow:0 1px 4px #0000000a;border:1px solid #e2e8f0}}.header-row{{display:flex;align-items:center;gap:10px;flex-wrap:wrap}}h1{{margin:0;font-size:26px;font-weight:500;letter-spacing:-.03em;color:#0f172a}}.muted{{color:#94a3b8}}h2{{margin:0 0 8px;font-size:17px;font-weight:500;color:#0f172a;display:flex;align-items:center;gap:6px}}.stat,.panel{{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;box-shadow:0 1px 3px #00000006;width:100%;border-left:3px solid #d1d9e6;margin-bottom:10px;box-sizing:border-box}}.panel{{border-left-color:#bfd4f0}}.stat span,.mini-stats span{{display:block;color:#64748b;font-size:12px;font-weight:500}}.stat b{{font-size:22px;color:#0f172a}}.mini-stats{{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:8px;margin:8px 0 10px}}.mini-stats>div{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}}.mini-stats b{{font-size:17px;color:#0f172a}}table{{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}}th,td{{text-align:left;border-bottom:1px solid #e2e8f0;padding:8px 10px;vertical-align:top;white-space:nowrap}}th{{color:#64748b;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc;position:sticky;top:0;z-index:1}}td b{{display:block;font-weight:500}}td a{{font-weight:500}}.num{{text-align:center;font-weight:500;white-space:nowrap}}details summary{{cursor:pointer;color:#2563eb;font-weight:500;font-size:14px;margin-bottom:4px}}.tablebox{{display:block;overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0;background:#fff;max-width:100%}}.unigrid{{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px}}.unigrid>div{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px}}.unigrid span{{display:block;color:#64748b;font-size:12px;font-weight:500}}.unigrid b{{font-size:17px;color:#0f172a}}@media(max-width:900px){{.topgrid,.mini-stats,.unigrid{{grid-template-columns:1fr 1fr}}table{{min-width:auto}}.wrap{{padding:12px}}}}
+:root{{--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#1e293b;--text2:#64748b;--text3:#94a3b8;--accent:#3b82f6;--accent2:#6366f1;--green:#10b981;--green-bg:#d1fae5;--amber:#f59e0b;--amber-bg:#fef3c7;--red:#ef4444;--red-bg:#fee2e2;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 12px rgba(0,0,0,.08)}}
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}}
+a{{color:var(--accent);text-decoration:none;transition:color .15s}}a:hover{{color:var(--accent2);text-decoration:underline}}
+.wrap{{max-width:1480px;margin:0 auto;padding:16px 20px}}
+/* Header */
+.header{{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;box-shadow:var(--shadow);margin-bottom:16px}}
+.header-left{{display:flex;align-items:center;gap:14px;flex-wrap:wrap}}
+.header h1{{font-size:22px;font-weight:600;letter-spacing:-.02em;color:#0f172a;white-space:nowrap}}
+.header-chips{{display:flex;gap:8px;flex-wrap:wrap}}
+.chip{{display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}}
+.chip b{{color:var(--text);font-weight:600}}
+.chip.server{{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}}
+.chip.ok{{background:var(--green-bg);border-color:#a7f3d0;color:#065f46}}
+/* KPI row */
+.kpi-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px}}
+.kpi{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:box-shadow .15s}}
+.kpi:hover{{box-shadow:var(--shadow-md)}}
+.kpi-icon{{font-size:24px;line-height:1;flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#f0f4ff;border-radius:10px}}
+.kpi-val{{font-size:24px;font-weight:700;color:#0f172a;line-height:1.1}}
+.kpi-label{{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px}}
+.kpi-sub{{font-size:11px;color:var(--text3);margin-top:1px}}
+.kpi.err .kpi-icon{{background:var(--red-bg)}}.kpi.err .kpi-val{{color:var(--red)}}
+.kpi.ok .kpi-icon{{background:var(--green-bg)}}.kpi.ok .kpi-val{{color:var(--green)}}
+/* Cards */
+.card{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}}
+.card-head{{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:#fafbfc}}
+.card-head h2{{font-size:15px;font-weight:600;color:#0f172a;display:flex;align-items:center;gap:8px}}
+.card-head .card-meta{{font-size:12px;color:var(--text3)}}
+.card-body{{padding:14px 18px}}
+/* Metric row inside card */
+.metric-row{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}}
+.mc{{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px}}
+.mc-l{{font-size:11px;color:var(--text2);font-weight:500}}
+.mc-v{{font-size:18px;font-weight:700;color:#0f172a}}
+.mc-status{{align-items:flex-start}}
+/* Tables */
+.table-wrap{{overflow-x:auto}}
+.data-table{{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}}
+.data-table th{{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);background:#f8fafc;border-bottom:2px solid var(--border);white-space:nowrap}}
+.data-table td{{padding:9px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}}
+.data-table tbody tr:hover{{background:#f8fafc}}
+.data-table tr:last-child td{{border-bottom:none}}
+.cell-name a{{font-weight:600}}.cell-name{{min-width:140px}}
+.cell-next{{color:var(--text2);white-space:nowrap}}.num{{text-align:center;font-weight:600;white-space:nowrap}}
+.empty-row{{text-align:center;color:var(--text3);padding:20px}}
+/* Status badges */
+.badge{{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}}
+.badge::before{{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}}
+.s-ok{{background:var(--green-bg);color:#065f46}}.s-ok::before{{background:var(--green)}}
+.s-warn{{background:var(--amber-bg);color:#92400e}}.s-warn::before{{background:var(--amber)}}
+.s-bad{{background:var(--red-bg);color:#991b1b}}.s-bad::before{{background:var(--red)}}
+.s-none{{background:#f1f5f9;color:var(--text2)}}.s-none::before{{background:#cbd5e1}}
+/* Progress bar */
+.pbar{{position:relative;display:inline-block;width:80px;height:20px;background:#e2e8f0;border-radius:6px;overflow:hidden;vertical-align:middle}}
+.pbar-fill{{height:100%;background:linear-gradient(90deg,#6366f1,#3b82f6);border-radius:6px;transition:width .3s;min-width:2px}}
+.pbar-text{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#1e293b;text-shadow:0 0 2px #fff}}
+/* Tags */
+.tag{{display:inline-flex;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}}
+.tag-on{{background:var(--green-bg);color:#065f46}}.tag-off{{background:#f1f5f9;color:var(--text3)}}
+.mono{{font-family:'SF Mono','Monaco','Cascadia Code',monospace;font-size:12px;color:var(--text2)}}
+/* Unicaizer grid */
+.uni-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}}
+.uni-cell{{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;justify-content:space-between}}
+.uni-l{{font-size:11px;color:var(--text2);font-weight:500}}
+.uni-v{{font-size:22px;font-weight:700;color:#0f172a}}.uni-v.err{{color:var(--red)}}
+.muted{{color:var(--text3)}}
+/* Cron details */
+details{{border:none}}details summary{{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:8px 0;list-style:none}}details summary::-webkit-details-marker{{display:none}}
+details summary::before{{content:'▸ ';transition:transform .15s;display:inline-block}}details[open] summary::before{{content:'▾ '}}
+/* Resource bars */
+.res-bar{{display:inline-flex;align-items:center;gap:6px}}.res-bar-track{{width:60px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}}.res-bar-fill{{height:100%;border-radius:3px}}
 </style></head><body><div class="wrap">
-<header><div class="header-row"><h1 style="margin:0;font-size:26px;white-space:nowrap">Дашборд всех проектов</h1><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💾 <span>{esc(resources['memory']['free'])}</span> из {esc(resources['memory']['total'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">💿 <span>{esc(resources['disk']['free'])}</span> из {esc(resources['disk']['total'])}</span><span style="background:#e1ebfa;border:1px solid #b8cbe8;border-radius:8px;padding:3px 16px;white-space:nowrap;font-size:13px;color:#1e3a6b">🇩🇪 Server1 · 📡 {esc(s['ip'])} · 🟢 В работе · Действует до {esc(s['valid_until'])}</span><span style="background:#f0f4fe;border:1px solid #d1d9e6;border-radius:8px;padding:3px 14px;white-space:nowrap;font-size:13px">Обновлено {esc(s['generated'])}</span></div></header>
-<section class="panel"><details><summary style="cursor:pointer;color:#475569;font-weight:500;font-size:12px;padding:4px 0">Cron всех проектов</summary><div class="tablebox" style="margin-top:6px"><table><thead><tr><th>Профиль</th><th>Включен или выключен</th><th>Расписание</th><th>Последний запуск</th><th>Следующий запуск</th><th>Статус</th></tr></thead><tbody>{cron_html}</tbody></table></div></details></section>
-<section class="panel"><h2>Проект Wibes</h2>{metric_cards(blocks['wibes'])}{project_table(blocks['wibes'])}</section>
-<section class="panel"><h2>Проект Creative Fabrica</h2>{metric_cards(blocks['creative'])}{project_table(blocks['creative'])}</section>
-<section class="panel"><h2>Проект Ритм</h2>{metric_cards(blocks['ritm'])}{project_table(blocks['ritm'])}</section>
-<section class="panel"><h2>Проект Unicaizer</h2><div class="unigrid">
-  <div><span>Всего уникальных посетителей</span><span>{esc(uni['unique_total'])}</span></div>
-  <div><span>Уникальные посетители за сегодня</span><span>{esc(uni['unique_today'])}</span></div>
-  <div><span>Авторизованные в Telegram</span><span>{esc(uni['telegram_users'])}</span></div>
-  <div><span>Видео обрабатываются сейчас</span><span>{esc(uni['processing_now'])}</span></div>
-  <div><span>Ошибки</span><span>{esc(uni['errors'])}</span></div>
-  <div><span>Статус</span><span>{esc(uni['status'])}</span></div>
-</div></section></div>
-</div><script>setTimeout(()=>location.reload(),60000)</script></body></html>"""
 
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>📊 Дашборд проектов</h1>
+    <span class="chip server">🇩🇪 Server1 · 📡 {esc(s['ip'])}</span>
+    <span class="chip ok">🟢 В работе · до {esc(s['valid_until'])}</span>
+  </div>
+  <div class="header-chips">
+    <span class="chip">💾 <b>{esc(resources['memory']['free'])}</b> / {esc(resources['memory']['total'])}</span>
+    <span class="chip">💿 <b>{esc(resources['disk']['free'])}</b> / {esc(resources['disk']['total'])}</span>
+    <span class="chip">🕐 {esc(s['generated'])}</span>
+  </div>
+</div>
+
+<!-- KPI Summary -->
+<div class="kpi-row">
+  {kpi_card('📁', 'Всего аккаунтов', str(total_accounts), 'активных проектов: 4')}
+  {kpi_card('📤', 'Постов сегодня', str(total_posts_today), 'запланировано на сегодня')}
+  {kpi_card('✅', 'Опубликовано всего', str(total_published_all), 'за всё время')}
+  {kpi_card('⚠️', 'Ошибки', str(total_errors), 'требуют внимания', 'err' if total_errors else 'ok')}
+  {kpi_card('🎬', 'Unicaizer', f"{esc(uni['unique_today'])}", f"визитов сегодня · {esc(uni['telegram_users'])} TG юзеров")}
+</div>
+
+<!-- Cron -->
+<div class="card">
+  <div class="card-head"><h2>⏰ Cron всех проектов</h2><span class="card-meta">{len(cron_rows)} задач</span></div>
+  <div class="card-body">
+    <details>
+      <summary>Показать таблицу cron-задач</summary>
+      <div class="table-wrap" style="margin-top:8px">
+        <table class="data-table"><thead><tr><th>Задача</th><th>Вкл.</th><th>Расписание</th><th>Последний запуск</th><th>Следующий запуск</th><th>Статус</th></tr></thead><tbody>{cron_html}</tbody></table>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- Wibes -->
+<div class="card">
+  <div class="card-head"><h2>🎥 Проект Wibes</h2><span class="card-meta">{len(blocks['wibes']['rows'])} аккаунтов · автозагрузка Wibes.ru</span></div>
+  <div class="card-body">{metric_row(blocks['wibes'])}{project_table(blocks['wibes'])}</div>
+</div>
+
+<!-- Creative Fabrica -->
+<div class="card">
+  <div class="card-head"><h2>📌 Creative Fabrica</h2><span class="card-meta">{len(blocks['creative']['rows'])} аккаунтов · Pinterest/WoopSocial</span></div>
+  <div class="card-body">{metric_row(blocks['creative'])}{project_table(blocks['creative'])}</div>
+</div>
+
+<!-- Ritm -->
+<div class="card">
+  <div class="card-head"><h2>🛒 Автопостинг Ритм</h2><span class="card-meta">{len(blocks['ritm']['rows'])} аккаунтов · Яндекс Ритм</span></div>
+  <div class="card-body">{metric_row(blocks['ritm'])}{project_table(blocks['ritm'])}</div>
+</div>
+
+<!-- Unicaizer -->
+<div class="card">
+  <div class="card-head"><h2>🎬 Unicaizer</h2><span class="card-meta">SaaS · обработка видео · unicaizer.ru</span></div>
+  <div class="card-body">{uni_html}</div>
+</div>
+
+</div>
+<script>setTimeout(()=>location.reload(),60000)</script>
+</body></html>"""
 
 
 class Handler(BaseHTTPRequestHandler):
