@@ -722,7 +722,7 @@ def build_ritm_block() -> dict[str, Any]:
         'pokypay_online': {'url': 'https://yandex.ru/rythm/profile/17608531351218553275', 'login': 'reginam74'},
     }
     rows = []
-    total_published = total_all = total_today = 0
+    total_published = total_today = 0
     for name in ['lovi_nahodki', 'pokypay_online']:
         try: st = json.loads((root / name / 'work' / 'state.json').read_text())
         except Exception: st = {}
@@ -730,19 +730,27 @@ def build_ritm_block() -> dict[str, Any]:
         except Exception: used = []
         slots = st.get('slots') or []
         idx = int(st.get('next_index') or 0)
-        is_today = st.get('date') == today_str()
-        planned = len(slots) if is_today else 0
-        published_today = min(idx, planned) if is_today else 0
-        remaining = max(0, planned - published_today) if is_today else 'план устарел'
-        next_time = slots[idx] if is_today and idx < len(slots) else ('план устарел' if not is_today else '—')
-        total_published += len(used); total_all += len(used) + (remaining if isinstance(remaining, int) else 0); total_today += planned
+        plan_date = st.get('date', '—')
+        is_today = plan_date == today_str()
+        # Always show plan slots count, regardless of date
+        planned = len(slots)
+        # Today's published = min(idx, planned) regardless of date
+        done_today = min(idx, planned)
+        remaining = max(0, planned - done_today)
+        next_time = slots[idx] if idx < len(slots) else '—'
+        # Note if plan is stale
+        if not is_today:
+            next_time = f'{next_time} (план {plan_date})' if idx < len(slots) else f'устарел ({plan_date})'
+        total_published += len(used)
+        total_today += done_today
         profile = ritm_profiles.get(name, {})
         display_name = f"{name} ({profile.get('login', '')})" if profile.get('login') else name
-        rows.append(metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned if is_today else f"0 ({st.get('date','—')})", len(used), remaining, next_time, status_label('ok' if is_today else 'warn')))
+        status = 'ok' if is_today else 'warn'
+        rows.append(metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned, len(used), remaining, next_time, status_label(status)))
     return {
         'title': 'Проект Ритм', 'columns_first': 'Название канала', 'site_column': None, 'rows': rows,
-        'errors': 0, 'total_published': total_published, 'total_posts_all': total_all, 'total_posts_today': total_today,
-        'status': status_label('warn' if any('устарел' in str(r['remaining_today']) for r in rows) else 'ok')
+        'errors': 0, 'total_published': total_published, 'total_posts_all': total_published, 'total_posts_today': total_today,
+        'status': status_label('warn' if any('устарел' in str(r.get('next_time', '')) for r in rows) else 'ok')
     }
 
 def aeza_server_info() -> dict[str, Any]:
