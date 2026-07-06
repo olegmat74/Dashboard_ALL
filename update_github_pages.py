@@ -50,17 +50,31 @@ def encrypt_html(plaintext: str, password: str) -> dict[str, str | int]:
 def shell_html(payload: dict[str, str | int]) -> str:
     return f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Единый дашборд проектов</title>
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0b1020;color:#eef2xff}}.box{{display:none;width:min(440px,calc(100vw - 32px));background:#111936;border:1px solid #26304f;border-radius:22px;padding:26px;box-shadow:0 20px 60px #0008}}h1{{margin:0 0 8px;font-size:26px;letter-spacing:-.04em}}p{{margin:0 0 20px;color:#98a2b3}}label{{display:block;margin:0 0 8px;color:#c8d4ff;font-weight:700}}input{{width:100%;height:46px;border-radius:12px;border:1px solid #33405f;background:#070b17;color:#eef2ff;padding:0 12px;font-size:16px}}button{{width:100%;height:46px;margin-top:14px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:900;cursor:pointer}}.error{{display:none;background:#51101a;color:#ffb1bd;border:1px solid #9d2f3b;padding:10px;border-radius:12px;margin-bottom:14px}}.muted{{font-size:12px;color:#7c879d;margin-top:12px}}
+*{{margin:0;padding:0;box-sizing:border-box}}:root{{--bg:#0a0a0f;--s:#12121a;--s2:#1a1a25;--b:#2a2a3a;--t:#e8e8f0;--t2:#a0a0b8;--t3:#6a6a80;--accent:#6366f1;--red:#ef4444;--font:'Inter',system-ui,sans-serif}}
+html{{background:var(--bg);color:var(--t);font-family:var(--font);font-size:13px;-webkit-font-smoothing:antialiased}}
+.login{{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .3s,visibility .3s}}
+.login.off{{opacity:0;visibility:hidden;pointer-events:none}}
+.login-box{{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:32px;width:100%;max-width:340px;text-align:center}}
+.login-box h2{{font-size:18px;font-weight:700;margin-bottom:4px}}
+.login-box p{{color:var(--t3);font-size:12px;margin-bottom:20px}}
+.login-box input{{width:100%;padding:10px 14px;background:var(--s2);border:1px solid var(--b);border-radius:8px;color:var(--t);font-size:13px;font-family:var(--font);outline:none}}
+.login-box input:focus{{border-color:var(--accent)}}
+.login-box button{{width:100%;padding:10px;margin-top:10px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer}}
+.login-box button:hover{{opacity:.9}}
+.login-err{{color:var(--red);font-size:11px;margin-top:6px;display:none}}
 </style></head>
 <body>
-<form class="box" id="login"><h1>Единый дашборд</h1><p>GitHub Pages версия. Введите пароль.</p><div class="error" id="err">Неверный пароль</div><label>Пароль</label><input id="pass" type="password" autocomplete="current-password" autofocus required><button type="submit">Войти</button></form>
+<div class="login" id="lo"><div class="login-box"><h2>Dashboard</h2><p>Введите пароль</p><input type="password" id="pw" placeholder="Пароль" autofocus><button onclick="go()">Войти</button><div class="login-err" id="err">Неверный пароль</div></div></div>
+<div class="dash" id="d"></div>
 <script>
 const payload = {{iterations:{payload['iterations']}, salt:'{payload['salt']}', nonce:'{payload['nonce']}', ciphertext:'{payload['ciphertext']}'}};
 function b64(s) {{ return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }}
 let showing = false;
-function showForm() {{ if(!showing){{ showing=true; document.getElementById('login').style.display='block'; }} }}
+function showForm() {{ if(!showing){{ showing=true; document.getElementById('lo').style.display='flex'; }} }}
 async function decrypt(password) {{
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
@@ -72,20 +86,26 @@ async function openWith(password) {{
   try {{
     const html = await decrypt(password);
     sessionStorage.setItem('dashboard_pages_password', password);
-    document.open(); document.write(html); document.close();
+    document.getElementById('d').innerHTML = html;
+    document.getElementById('d').classList.add('on');
+    document.getElementById('lo').classList.add('off');
   }} catch(e) {{
     sessionStorage.removeItem('dashboard_pages_password');
     document.getElementById('err').style.display = 'block';
-    showForm();
+    document.getElementById('pw').value = '';
   }}
 }}
-async function init() {{
+async function go() {{
+  const pw = document.getElementById('pw').value;
+  document.getElementById('err').style.display = 'none';
+  await openWith(pw);
+}}
+document.getElementById('pw').addEventListener('keydown', e => {{ if(e.key==='Enter') go(); }});
+(async function init() {{
   const saved = sessionStorage.getItem('dashboard_pages_password');
   if (saved) {{ await openWith(saved); return; }}
-  showForm();
-}}
-init();
-document.getElementById('login').addEventListener('submit', e => {{ e.preventDefault(); openWith(document.getElementById('pass').value); }});
+  document.getElementById('lo').style.display = 'flex';
+}})();
 </script></body></html>'''
 
 
