@@ -84,8 +84,7 @@ async function openWith(password) {{
   try {{
     const html = await decrypt(password);
     sessionStorage.setItem('dashboard_pages_password', password);
-    document.getElementById('d').innerHTML = html;
-    document.getElementById('d').classList.add('on');
+    document.open(); document.write(html); document.close();
     document.getElementById('lo').style.display = 'none';
   }} catch(e) {{
     sessionStorage.removeItem('dashboard_pages_password');
