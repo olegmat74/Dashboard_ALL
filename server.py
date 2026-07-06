@@ -949,7 +949,6 @@ body{min-height:100vh}
 .dash.on{opacity:1}
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--b)}
 .hdr h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
-.hdr-date{font-size:12px;color:var(--t2);margin-top:2px}
 .hdr-r{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -987,7 +986,7 @@ tbody tr:hover{background:var(--s2)}
 </style></head>
 <body>
 <div class="dash" id="d">
-<div class="hdr"><div><h1>Автоматизация</h1><div class="hdr-date" id="hdrdate"></div></div><div class="hdr-r"><span id="clk"></span><span class="dot"></span></div></div>
+<div class="hdr"><h1>Автоматизация</h1><div class="hdr-r"><span id="clk"></span><span class="dot"></span></div></div>
 <div class="stats">
 <div class="st"><div class="st-l">Постов всего</div><div class="st-v a">""" + esc(total_posts_published) + """</div></div>
 <div class="st"><div class="st-l">Проектов</div><div class="st-v g">""" + str(project_count) + """</div></div>
@@ -1006,7 +1005,7 @@ tbody tr:hover{background:var(--s2)}
 <div class="foot"><div><b>Автообновление</b> каждые 2 мин</div><div id="ft"></div></div>
 </div>
 <script>
-function clk(){var n=new Date();document.getElementById('clk').textContent=n.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' \\u00b7 '+n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});document.getElementById('ft').textContent=n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});var el=document.getElementById('hdrdate');if(el)el.textContent=n.toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'})}
+function clk(){var n=new Date();document.getElementById('clk').textContent=n.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' \\u00b7 '+n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});document.getElementById('ft').textContent=n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
 clk();setInterval(clk,1000);setTimeout(function(){location.reload()},120000);
 </script>
 </body></html>"""
