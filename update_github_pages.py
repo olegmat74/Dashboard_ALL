@@ -52,12 +52,15 @@ def shell_html(payload: dict[str, str | int]) -> str:
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Единый дашборд проектов</title>
 <style>
-*{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0b1020;color:#eef2ff}}.box{{width:min(440px,calc(100vw - 32px));background:#111936;border:1px solid #26304f;border-radius:22px;padding:26px;box-shadow:0 20px 60px #0008}}h1{{margin:0 0 8px;font-size:26px;letter-spacing:-.04em}}p{{margin:0 0 20px;color:#98a2b3}}label{{display:block;margin:0 0 8px;color:#c8d4ff;font-weight:700}}input{{width:100%;height:46px;border-radius:12px;border:1px solid #33405f;background:#070b17;color:#eef2ff;padding:0 12px;font-size:16px}}button{{width:100%;height:46px;margin-top:14px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:900;cursor:pointer}}.error{{display:none;background:#51101a;color:#ffb1bd;border:1px solid #9d2f3b;padding:10px;border-radius:12px;margin-bottom:14px}}.muted{{font-size:12px;color:#7c879d;margin-top:12px}}
-</style></head><body>
-<form class="box" id="login"><h1>Единый дашборд</h1><p>GitHub Pages версия. Введите пароль один раз в этой вкладке.</p><div class="error" id="err">Неверный пароль</div><label>Пароль</label><input id="pass" type="password" autocomplete="current-password" autofocus required><button type="submit">Войти</button><div class="muted">Данные зашифрованы в репозитории. Без пароля снимок не открывается.</div></form>
+*{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0b1020;color:#eef2xff}}.box{{display:none;width:min(440px,calc(100vw - 32px));background:#111936;border:1px solid #26304f;border-radius:22px;padding:26px;box-shadow:0 20px 60px #0008}}h1{{margin:0 0 8px;font-size:26px;letter-spacing:-.04em}}p{{margin:0 0 20px;color:#98a2b3}}label{{display:block;margin:0 0 8px;color:#c8d4ff;font-weight:700}}input{{width:100%;height:46px;border-radius:12px;border:1px solid #33405f;background:#070b17;color:#eef2ff;padding:0 12px;font-size:16px}}button{{width:100%;height:46px;margin-top:14px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:900;cursor:pointer}}.error{{display:none;background:#51101a;color:#ffb1bd;border:1px solid #9d2f3b;padding:10px;border-radius:12px;margin-bottom:14px}}.muted{{font-size:12px;color:#7c879d;margin-top:12px}}
+</style></head>
+<body>
+<form class="box" id="login"><h1>Единый дашборд</h1><p>GitHub Pages версия. Введите пароль.</p><div class="error" id="err">Неверный пароль</div><label>Пароль</label><input id="pass" type="password" autocomplete="current-password" autofocus required><button type="submit">Войти</button></form>
 <script>
 const payload = {{iterations:{payload['iterations']}, salt:'{payload['salt']}', nonce:'{payload['nonce']}', ciphertext:'{payload['ciphertext']}'}};
 function b64(s) {{ return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }}
+let showing = false;
+function showForm() {{ if(!showing){{ showing=true; document.getElementById('login').style.display='block'; }} }}
 async function decrypt(password) {{
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
@@ -73,10 +76,15 @@ async function openWith(password) {{
   }} catch(e) {{
     sessionStorage.removeItem('dashboard_pages_password');
     document.getElementById('err').style.display = 'block';
+    showForm();
   }}
 }}
-const saved = sessionStorage.getItem('dashboard_pages_password');
-if (saved) openWith(saved);
+async function init() {{
+  const saved = sessionStorage.getItem('dashboard_pages_password');
+  if (saved) {{ await openWith(saved); return; }}
+  showForm();
+}}
+init();
 document.getElementById('login').addEventListener('submit', e => {{ e.preventDefault(); openWith(document.getElementById('pass').value); }});
 </script></body></html>'''
 
