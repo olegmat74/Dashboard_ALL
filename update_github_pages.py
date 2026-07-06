@@ -68,13 +68,11 @@ html{{background:var(--bg);color:var(--t);font-family:var(--font);font-size:13px
 .login-err{{color:var(--red);font-size:11px;margin-top:6px;display:none}}
 </style></head>
 <body>
-<div class="login" id="lo"><div class="login-box"><h2>Dashboard</h2><p>Введите пароль</p><input type="password" id="pw" placeholder="Пароль" autofocus><button onclick="go()">Войти</button><div class="login-err" id="err">Неверный пароль</div></div></div>
+<div class="login" id="lo" style="display:none"><div class="login-box"><h2>Dashboard</h2><p>Введите пароль</p><input type="password" id="pw" placeholder="Пароль" autofocus><button onclick="go()">Войти</button><div class="login-err" id="err">Неверный пароль</div></div></div>
 <div class="dash" id="d"></div>
 <script>
 const payload = {{iterations:{payload['iterations']}, salt:'{payload['salt']}', nonce:'{payload['nonce']}', ciphertext:'{payload['ciphertext']}'}};
 function b64(s) {{ return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }}
-let showing = false;
-function showForm() {{ if(!showing){{ showing=true; document.getElementById('lo').style.display='flex'; }} }}
 async function decrypt(password) {{
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
@@ -88,11 +86,12 @@ async function openWith(password) {{
     sessionStorage.setItem('dashboard_pages_password', password);
     document.getElementById('d').innerHTML = html;
     document.getElementById('d').classList.add('on');
-    document.getElementById('lo').classList.add('off');
+    document.getElementById('lo').style.display = 'none';
   }} catch(e) {{
     sessionStorage.removeItem('dashboard_pages_password');
     document.getElementById('err').style.display = 'block';
     document.getElementById('pw').value = '';
+    document.getElementById('lo').style.display = 'flex';
   }}
 }}
 async function go() {{
