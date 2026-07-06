@@ -833,8 +833,8 @@ def render() -> str:
     blocks = project_blocks()
     cron_rows = cron_all_rows()
 
-    total_posts_all = sum(b.get('total_posts_all', 0) for k, b in blocks.items() )
-    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() )
+    total_posts_published = sum(b.get('total_published', 0) for k, b in blocks.items())
+    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items())
     total_errors = sum(b.get('errors', 0) for k, b in blocks.items())
     project_count = sum(1 for k, b in blocks.items() if b.get('rows'))
 
@@ -980,7 +980,7 @@ tbody tr:hover{background:var(--s2)}
 <div class="dash" id="d">
 <div class="hdr"><h1>Автоматизация</h1><div class="hdr-r"><span id="clk"></span><span class="dot"></span></div></div>
 <div class="stats">
-<div class="st"><div class="st-l">Постов всего</div><div class="st-v a">""" + esc(total_posts_all) + """</div></div>
+<div class="st"><div class="st-l">Постов всего</div><div class="st-v a">""" + esc(total_posts_published) + """</div></div>
 <div class="st"><div class="st-l">Проектов</div><div class="st-v g">""" + str(project_count) + """</div></div>
 <div class="st"><div class="st-l">Сегодня</div><div class="st-v p">""" + esc(total_posts_today) + """</div></div>
 <div class="st"><div class="st-l">Ошибки</div><div class="st-v """ + ('o' if total_errors else 'g') + '">' + str(total_errors) + """</div></div>
