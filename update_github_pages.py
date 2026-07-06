@@ -29,12 +29,7 @@ def load_dashboard_html() -> str:
     assert spec.loader is not None
     spec.loader.exec_module(mod)
     html = mod.render()
-    notice = '''
-<div style="max-width:1500px;margin:0 auto 0;padding:8px 14px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;color:#64748b;text-align:left">
-Автообновление с сервера каждые 2 минуты
-</div>
-'''
-    html = html.replace('<body><div class="wrap">', '<body>' + notice + '<div class="wrap">')
+    html = html.replace('<body><div class="wrap">', '<body><div class="wrap">')
     html = html.replace('<script>setTimeout(()=>location.reload(),60000)</script>', '<script>setTimeout(()=>location.reload(),120000)</script>')
     return html
 
