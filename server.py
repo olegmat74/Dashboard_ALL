@@ -835,7 +835,7 @@ def render() -> str:
 
     total_posts_all = sum(b.get('total_posts_all', 0) for k, b in blocks.items() )
     total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items() )
-    total_errors = sum(b.get('errors', 0) for k, b in blocks.items() ) + uni.get('errors', 0)
+    total_errors = sum(b.get('errors', 0) for k, b in blocks.items())
     project_count = sum(1 for k, b in blocks.items() if b.get('rows'))
 
     # Build table rows for each project
