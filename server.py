@@ -32,6 +32,20 @@ DASH_ROOT = Path(__file__).resolve().parent
 PASSWORD_HASH_FILE = DASH_ROOT / '.dashboard_password_hash'
 SESSION_SECRET_FILE = DASH_ROOT / '.session_secret'
 SESSION_COOKIE = 'projects_dashboard_session'
+POSTING_RULES_FILE = DASH_ROOT / 'posting_rules.json'
+
+
+def load_posting_rules() -> dict[str, Any]:
+    if not POSTING_RULES_FILE.exists():
+        return {}
+    try:
+        return json.loads(POSTING_RULES_FILE.read_text())
+    except Exception:
+        return {}
+
+
+def save_posting_rules(data: dict[str, Any]) -> None:
+    POSTING_RULES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
 KNOWN_PROJECTS = [
@@ -943,6 +957,22 @@ def render() -> str:
         <div class="uni-cell"><span class="uni-l">Status</span>{status_badge(uni['status'])}</div>
       </div>"""
 
+    # Posting rules display
+    rules = load_posting_rules()
+
+    def rules_strip(project_key: str) -> str:
+        r = rules.get(project_key)
+        if not r:
+            return ''
+        chips = []
+        if r.get('time_window'):
+            chips.append(f'<span class="rule-chip">🕐 {esc(r["time_window"])}</span>')
+        if r.get('posts_per_day'):
+            chips.append(f'<span class="rule-chip">📊 {esc(r["posts_per_day"])}</span>')
+        if r.get('interval_min') and int(r.get('interval_min', 0)) > 0:
+            chips.append(f'<span class="rule-chip">⏱ ≥{esc(r["interval_min"])} мин</span>')
+        return f'<div class="rules-strip">{"".join(chips)}</div>' if chips else ''
+
     mem_pct = resources['memory']['pct_free']
     disk_pct = resources['disk']['pct_free']
 
@@ -1022,6 +1052,9 @@ details{{border:none}}details summary{{cursor:pointer;font-size:13px;font-weight
 details summary::before{{content:'▸ ';transition:transform .15s;display:inline-block}}details[open] summary::before{{content:'▾ '}}
 /* Resource bars */
 .res-bar{{display:inline-flex;align-items:center;gap:6px}}.res-bar-track{{width:60px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}}.res-bar-fill{{height:100%;border-radius:3px}}
+/* Rules strip */
+.rules-strip{{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}}
+.rule-chip{{display:inline-flex;align-items:center;gap:4px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;color:#3730a3;white-space:nowrap}}
 </style></head><body><div class="wrap">
 
 <!-- Header -->
@@ -1035,6 +1068,7 @@ details summary::before{{content:'▸ ';transition:transform .15s;display:inline
     <span class="chip">💾 <b>{esc(resources['memory']['free'])}</b> / {esc(resources['memory']['total'])}</span>
     <span class="chip">💿 <b>{esc(resources['disk']['free'])}</b> / {esc(resources['disk']['total'])}</span>
     <span class="chip">🕐 {esc(s['generated'])}</span>
+    <a href="/settings" class="chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;text-decoration:none">⚙️ Настройки</a>
   </div>
 </div>
 
@@ -1063,29 +1097,139 @@ details summary::before{{content:'▸ ';transition:transform .15s;display:inline
 <!-- Wibes -->
 <div class="card">
   <div class="card-head"><h2>🎥 Проект Wibes</h2><span class="card-meta">{len(blocks['wibes']['rows'])} аккаунтов · автозагрузка Wibes.ru</span></div>
-  <div class="card-body">{metric_row(blocks['wibes'])}{project_table(blocks['wibes'])}</div>
+  <div class="card-body">{rules_strip('wibes')}{metric_row(blocks['wibes'])}{project_table(blocks['wibes'])}</div>
 </div>
 
 <!-- Creative Fabrica -->
 <div class="card">
   <div class="card-head"><h2>📌 Creative Fabrica</h2><span class="card-meta">{len(blocks['creative']['rows'])} аккаунтов · Pinterest/WoopSocial</span></div>
-  <div class="card-body">{metric_row(blocks['creative'])}{project_table(blocks['creative'])}</div>
+  <div class="card-body">{rules_strip('creative_fabrica')}{metric_row(blocks['creative'])}{project_table(blocks['creative'])}</div>
 </div>
 
 <!-- Ritm -->
 <div class="card">
   <div class="card-head"><h2>🛒 Автопостинг Ритм</h2><span class="card-meta">{len(blocks['ritm']['rows'])} аккаунтов · Яндекс Ритм</span></div>
-  <div class="card-body">{metric_row(blocks['ritm'])}{project_table(blocks['ritm'])}</div>
+  <div class="card-body">{rules_strip('ritm')}{metric_row(blocks['ritm'])}{project_table(blocks['ritm'])}</div>
 </div>
 
 <!-- Unicaizer -->
 <div class="card">
   <div class="card-head"><h2>🎬 Unicaizer</h2><span class="card-meta">SaaS · обработка видео · unicaizer.ru</span></div>
-  <div class="card-body">{uni_html}</div>
+  <div class="card-body">{rules_strip('unicaizer')}{uni_html}</div>
 </div>
 
 </div>
 <script>setTimeout(()=>location.reload(),60000)</script>
+</body></html>"""
+
+
+def render_settings() -> str:
+    rules = load_posting_rules()
+    project_order = ['wibes', 'creative_fabrica', 'ritm', 'unicaizer']
+    icons = {'wibes': '🎥', 'creative_fabrica': '📌', 'ritm': '🛒', 'unicaizer': '🎬'}
+
+    cards = []
+    for key in project_order:
+        r = rules.get(key, {})
+        title = r.get('title', key)
+        icon = icons.get(key, '📁')
+        time_window = r.get('time_window', '')
+        posts_per_day = r.get('posts_per_day', '')
+        interval_min = r.get('interval_min', 0)
+        rules_list = r.get('rules', [])
+        rules_text = '\n'.join(rules_list) if rules_list else ''
+
+        cards.append(f"""
+<div class="card" id="card-{key}">
+  <div class="card-head"><h2>{icon} {esc(title)}</h2><span class="card-meta">правила постинга</span></div>
+  <div class="card-body">
+    <form class="rules-form" data-project="{key}">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Временное окно</label>
+          <input type="text" name="time_window" value="{esc(time_window)}" placeholder="10:00-22:00">
+        </div>
+        <div class="form-field">
+          <label>Постов в день</label>
+          <input type="text" name="posts_per_day" value="{esc(posts_per_day)}" placeholder="3-5">
+        </div>
+        <div class="form-field">
+          <label>Мин. интервал (мин)</label>
+          <input type="number" name="interval_min" value="{esc(interval_min)}" placeholder="120" min="0">
+        </div>
+      </div>
+      <div class="form-field" style="margin-top:10px">
+        <label>Правила (по строке)</label>
+        <textarea name="rules" rows="6" placeholder="Одно правило на строку">{esc(rules_text)}</textarea>
+      </div>
+      <button type="submit" class="btn-save">Сохранить</button>
+      <span class="save-status" id="status-{key}"></span>
+    </form>
+  </div>
+</div>""")
+
+    cards_html = '\n'.join(cards)
+
+    return f"""<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Настройки правил постинга — Дашборд</title>
+<style>
+:root{{--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#1e293b;--text2:#64748b;--accent:#3b82f6;--green:#10b981;--green-bg:#d1fae5;--red:#ef4444;--red-bg:#fee2e2;--radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06)}}
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}}
+a{{color:var(--accent);text-decoration:none}}a:hover{{text-decoration:underline}}
+.wrap{{max-width:1000px;margin:0 auto;padding:16px 20px}}
+.header{{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;box-shadow:var(--shadow);margin-bottom:16px}}
+.header h1{{font-size:20px;font-weight:600;color:#0f172a}}
+.back-link{{font-size:13px;font-weight:600;color:var(--accent)}}
+.card{{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}}
+.card-head{{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:#fafbfc}}
+.card-head h2{{font-size:15px;font-weight:600;color:#0f172a}}
+.card-meta{{font-size:12px;color:var(--text2)}}
+.card-body{{padding:14px 18px}}
+.form-grid{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}}
+.form-field{{display:flex;flex-direction:column;gap:4px}}
+.form-field label{{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}}
+.form-field input,.form-field textarea{{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff}}
+.form-field input:focus,.form-field textarea:focus{{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}}
+.form-field textarea{{resize:vertical;font-family:'SF Mono',monospace;font-size:13px;line-height:1.6}}
+.btn-save{{margin-top:12px;padding:8px 20px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:background .15s}}
+.btn-save:hover{{background:#2563eb}}
+.save-status{{margin-left:10px;font-size:12px;font-weight:600}}
+.save-status.ok{{color:var(--green)}}.save-status.err{{color:var(--red)}}
+@media(max-width:700px){{.form-grid{{grid-template-columns:1fr}}}}
+</style></head><body><div class="wrap">
+<div class="header"><h1>⚙️ Настройки правил постинга</h1><a href="/" class="back-link">← Назад к дашборду</a></div>
+{cards_html}
+</div>
+<script>
+document.querySelectorAll('.rules-form').forEach(form => {{
+  form.addEventListener('submit', async e => {{
+    e.preventDefault();
+    const project = form.dataset.project;
+    const status = document.getElementById('status-' + project);
+    status.textContent = 'Сохранение...'; status.className = 'save-status';
+    const fd = new FormData(form);
+    const payload = {{
+      time_window: fd.get('time_window'),
+      posts_per_day: fd.get('posts_per_day'),
+      interval_min: parseInt(fd.get('interval_min')) || 0,
+      rules: fd.get('rules').split('\\n').map(s => s.trim()).filter(Boolean)
+    }};
+    try {{
+      const resp = await fetch('/api/rules/' + project, {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify(payload)
+      }});
+      const data = await resp.json();
+      if (data.ok) {{ status.textContent = '✅ Сохранено'; status.className = 'save-status ok'; }}
+      else {{ status.textContent = '❌ ' + (data.error || 'ошибка'); status.className = 'save-status err'; }}
+    }} catch(err) {{ status.textContent = '❌ сеть'; status.className = 'save-status err'; }}
+    setTimeout(() => {{ status.textContent = ''; status.className = 'save-status'; }}, 3000);
+  }});
+}});
+</script>
 </body></html>"""
 
 
@@ -1117,17 +1261,45 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path != '/login':
-            self.send_response(404); self.end_headers(); return
-        length = int(self.headers.get('Content-Length') or 0)
-        raw = self.rfile.read(min(length, 4096)).decode('utf-8', 'ignore')
-        password = parse_qs(raw).get('password', [''])[0]
-        if verify_password(password):
-            self.send_response(302)
-            self.send_header('Location', '/')
-            self.send_header('Set-Cookie', f'{SESSION_COOKIE}={make_session_cookie()}; HttpOnly; SameSite=Lax; Path=/; Max-Age={7*86400}')
-            self.end_headers(); return
-        self.write_html(login_page('Неверный пароль'), status=401)
+        if path == '/login':
+            length = int(self.headers.get('Content-Length') or 0)
+            raw = self.rfile.read(min(length, 4096)).decode('utf-8', 'ignore')
+            password = parse_qs(raw).get('password', [''])[0]
+            if verify_password(password):
+                self.send_response(302)
+                self.send_header('Location', '/')
+                self.send_header('Set-Cookie', f'{SESSION_COOKIE}={make_session_cookie()}; HttpOnly; SameSite=Lax; Path=/; Max-Age={7*86400}')
+                self.end_headers(); return
+            self.write_html(login_page('Неверный пароль'), status=401); return
+        # All other POST routes require auth
+        if not self.is_authed():
+            self.send_response(403); self.end_headers(); return
+        if path.startswith('/api/rules/'):
+            project = path.split('/')[-1]
+            rules = load_posting_rules()
+            if project not in rules:
+                self.write_json({'ok': False, 'error': 'проект не найден'}, 404); return
+            length = int(self.headers.get('Content-Length') or 0)
+            raw = self.rfile.read(min(length, 16384)).decode('utf-8', 'ignore')
+            try:
+                data = json.loads(raw)
+                existing = rules[project]
+                existing['time_window'] = data.get('time_window', '')
+                existing['posts_per_day'] = data.get('posts_per_day', '')
+                existing['interval_min'] = int(data.get('interval_min', 0))
+                existing['rules'] = data.get('rules', [])
+                save_posting_rules(rules)
+                self.write_json({'ok': True}); return
+            except Exception as exc:
+                self.write_json({'ok': False, 'error': str(exc)}, 400); return
+        self.send_response(404); self.end_headers()
+
+    def write_json(self, data: dict, status: int = 200) -> None:
+        body = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers(); self.wfile.write(body)
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -1147,6 +1319,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
             self.end_headers(); self.wfile.write(body); return
+        if path == '/settings':
+            body = render_settings().encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers(); self.wfile.write(body); return
+        if path == '/api/rules':
+            self.write_json(load_posting_rules()); return
         if path == '/api/refresh':
             import subprocess
             try:

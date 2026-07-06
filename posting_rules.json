@@ -1,0 +1,53 @@
+{
+  "wibes": {
+    "title": "Wibes",
+    "time_window": "10:00-22:00",
+    "posts_per_day": "3-5",
+    "interval_min": 120,
+    "rules": [
+      "Видео постятся в окно 10:00–22:00 по ЕКБ",
+      "Минимум 2 часа между постами",
+      "3–5 видео в день на канал",
+      "Cron запускает загрузку в 04:00 UTC (09:00 ЕКБ)",
+      "Комментарии и лайки распределяются равномерно по дню"
+    ]
+  },
+  "creative_fabrica": {
+    "title": "Creative Fabrica",
+    "time_window": "06:00-23:59",
+    "posts_per_day": "2-5",
+    "interval_min": 60,
+    "rules": [
+      "Пины планируются через WoopSocial",
+      "Проверка статуса каждые 6 часов (cron)",
+      "2–5 пинов в день на аккаунт",
+      "Время постинга: 06:00–23:59 UTC",
+      "Очереди: woopsocial_publish_queue.csv, junk_journal_vault, planner_printable, svg_craft_cut, stitchvault"
+    ]
+  },
+  "ritm": {
+    "title": "Автопостинг Ритм",
+    "time_window": "10:00-22:00",
+    "posts_per_day": "8-12",
+    "interval_min": 45,
+    "rules": [
+      "Посты в окно 10:00–22:00 по ЕКБ",
+      "8–12 постов в день на канал",
+      "Минимум 45 минут между постами",
+      "План генерируется каждое утро через YRE Engine",
+      "Аккаунты: lovi_nahodki, pokypay_online"
+    ]
+  },
+  "unicaizer": {
+    "title": "Unicaizer",
+    "time_window": "24/7",
+    "posts_per_day": "3 SEO статьи",
+    "interval_min": 0,
+    "rules": [
+      "Сайт работает 24/7",
+      "3 SEO статьи в день, публикует cron в 09:00 ЕКБ",
+      "Обработка видео — без ограничений по времени",
+      "Health check: http://127.0.0.1:8000/health"
+    ]
+  }
+}
