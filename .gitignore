@@ -3,4 +3,5 @@ __pycache__/
 .dashboard_password_hash
 .session_secret
 .initial_password.txt
+.pages_password
 .env
