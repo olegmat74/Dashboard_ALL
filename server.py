@@ -636,25 +636,29 @@ def build_wibes_block() -> dict[str, Any]:
         done = int((plan.get('completed') or {}).get('videos') or 0)
         times = plan.get('video_times') or []
         next_time = next((t for t in times if t > datetime.now().strftime('%H:%M')), '—') if planned else 'нет плана'
+        # Count videos: first try per-account folder, fall back to general uploaded/
         account_id = (a.get('author_url') or '').rstrip('/').split('/')[-1]
-        paths = [root / 'uploaded' / account_id] if account_id else []
-        paths.append(root / 'uploaded')
-        published_all = 0
-        published_today = 0
-        for path in paths:
-            published_all += count_files(path, ('*.mp4', '*.mov'))
-            published_today += count_files(path, ('*.mp4', '*.mov'), today_only=True)
-            if published_all:
-                break
+        account_dir = root / 'uploaded' / account_id
+        general_dir = root / 'uploaded'
+        if account_dir.exists():
+            published_all = count_files(account_dir, ('*.mp4', '*.mov'))
+            published_today = count_files(account_dir, ('*.mp4', '*.mov'), today_only=True)
+        else:
+            published_all = count_files(general_dir, ('*.mp4', '*.mov'))
+            published_today = count_files(general_dir, ('*.mp4', '*.mov'), today_only=True)
+        # Today's progress: use schedule completed if available, else file count
+        today_done = done if planned > 0 else published_today
+        today_plan = planned if planned > 0 else published_today
+        remaining = max(0, today_plan - today_done)
         total_all += published_all
-        total_today += published_today
+        total_today += today_done
         status = 'ok' if a.get('enabled', True) and not errors else 'warn'
         accounts.append(metrics_row(
             f"{a.get('display_name', handle)} {handle}",
             a.get('author_url', ''),
-            planned if planned else 'нет плана',
+            today_plan,
             published_all,
-            max(0, planned - done) if planned else '—',
+            remaining,
             next_time,
             status_label(status),
         ))
