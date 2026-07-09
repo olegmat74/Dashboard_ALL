@@ -514,6 +514,7 @@ def build_creative_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_creative_fabrica'
     queue_names = {
         'woopsocial_publish_queue.csv': 'Creative Finds Hub',
+        'junk_journal_vault_publish_queue.csv': 'Junk Journal Vault',
         'planner_printable_studio_publish_queue.csv': 'Planner Printable Studio',
         'svg_craft_cut_studio_publish_queue.csv': 'SVG Craft Cut Studio',
         'stitchvault_studio_publish_queue.csv': 'StitchVault Studio',
@@ -523,6 +524,7 @@ def build_creative_block() -> dict[str, Any]:
     # Pinterest account URLs
     pinterest_urls = {
         'woopsocial_publish_queue.csv': 'https://www.pinterest.com/digitalcraftfinds/',
+        'junk_journal_vault_publish_queue.csv': 'https://www.pinterest.com/printablejournalideas/',
         'planner_printable_studio_publish_queue.csv': 'https://www.pinterest.com/planner_printable_studio/',
         'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
         'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
@@ -801,7 +803,8 @@ def render() -> str:
         # Map to Russian labels
         name_map = {
             'WoopSocial Pinterest delivery status watcher': 'Pinterest: статус',
-            'S002 Junk Journal Vault WoopSocial status watcher': 'Junk Journal',
+            'S002 Junk Journal Vault WoopSocial status watcher — every 6h': 'Junk Journal',
+            'S002 Junk Journal Vault WoopSocial status watcher — every 1h': 'Junk Journal',
             'S004 Planner Printable Studio WoopSocial status watcher': 'Planner Printable',
             'S005 SVG Craft Cut Studio WoopSocial status watcher': 'SVG Craft',
             'S006 StitchVault Studio WoopSocial status watcher — every 6h': 'StitchVault',
