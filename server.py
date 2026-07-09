@@ -522,7 +522,7 @@ def build_creative_block() -> dict[str, Any]:
     }
     # Pinterest account URLs
     pinterest_urls = {
-        'woopsocial_publish_queue.csv': 'https://www.pinterest.com/hit_market/',
+        'woopsocial_publish_queue.csv': 'https://www.pinterest.com/digitalcraftfinds/',
         'planner_printable_studio_publish_queue.csv': 'https://www.pinterest.com/planner_printable_studio/',
         'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
         'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
