@@ -47,17 +47,6 @@ def save_posting_rules(data: dict[str, Any]) -> None:
 
 KNOWN_PROJECTS = [
     {
-        'key': 'wibes',
-        'title': 'Wibes Automation',
-        'profile': 'wibes',
-        'path': PROFILES / 'wibes' / 'workspace' / 'wibes-automation',
-        'kind': 'автозагрузка/обработка Wibes',
-        'public_url': '',
-        'local_url': '',
-        'health_url': '',
-        'services': [],
-    },
-    {
         'key': 'ritm',
         'title': 'Autopost Ritm',
         'profile': 'autopost_ritm',
@@ -444,30 +433,6 @@ def link_html(url: str, label: str | None = None) -> str:
 def build_account_rows() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
-    # Wibes accounts
-    auth = PROFILES / 'wibes' / 'workspace' / 'wibes-automation' / 'auth.json'
-    try:
-        data = json.loads(auth.read_text())
-        accounts = data.get('accounts', [])
-    except Exception:
-        accounts = []
-    wroot = PROFILES / 'wibes' / 'workspace' / 'wibes-automation'
-    for a in accounts:
-        handle = a.get('handle') or a.get('display_name') or 'Wibes'
-        uploaded = count_glob(wroot / 'uploaded', '*.mp4')
-        account_id = (a.get('author_url') or '').rstrip('/').split('/')[-1]
-        if account_id:
-            uploaded = count_glob(wroot / 'uploaded' / account_id, '*.mp4') or uploaded
-        recent = recent_files(wroot / 'uploaded' / account_id if account_id else wroot / 'uploaded', 1)
-        rows.append({
-            'project': 'Wibes', 'account': f"{a.get('display_name', handle)} {handle}", 'platform': 'Wibes.ru',
-            'site_url': 'https://wibes.ru', 'account_url': a.get('author_url', ''),
-            'content': a.get('search_query') or a.get('description') or 'короткие видео',
-            'when': 'ежедневно 09:00 ЕКБ; 3–5 видео/день',
-            'published': str(uploaded), 'scheduled': 'cron 2', 'next': '04:00 UTC',
-            'last': recent[0]['age'] if recent else '—', 'status': 'warn' if a.get('enabled', True) else 'bad'
-        })
-
     # Yandex Ritm accounts
     rroot = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
     logins = {'lovi_nahodki': 'olegmat174', 'pokypay_online': 'reginam74'}
@@ -587,7 +552,7 @@ def system_resources() -> dict[str, Any]:
 
 def cron_all_rows() -> list[dict[str, str]]:
     out = []
-    for profile in ['wibes', 'autopost_creative_fabrica', 'autopost_ritm']:
+    for profile in ['autopost_creative_fabrica', 'autopost_ritm']:
         for j in load_jobs(profile):
             out.append({
                 'profile': profile,
@@ -610,67 +575,6 @@ def metrics_row(name: str, url: str, planned: int | str, published: int | str, r
         'remaining_today': remaining,
         'next_time': next_time,
         'status': status,
-    }
-
-def build_wibes_block() -> dict[str, Any]:
-    root = PROFILES / 'wibes' / 'workspace' / 'wibes-automation'
-    accounts = []
-    try:
-        auth = json.loads((root / 'auth.json').read_text()).get('accounts', [])
-    except Exception:
-        auth = []
-    try:
-        schedule = json.loads((root / '.state' / 'schedule.json').read_text()).get('days', {}).get(today_str(), {})
-    except Exception:
-        schedule = {}
-    errors = 0
-    for j in load_jobs('wibes'):
-        if j.get('last_status') == 'error':
-            errors += 1
-    total_all = 0
-    total_today = 0
-    for a in auth:
-        handle = a.get('handle') or a.get('display_name') or 'Wibes'
-        plan = (schedule.get('accounts') or {}).get(handle, {})
-        planned = int(plan.get('videos') or 0)
-        done = int((plan.get('completed') or {}).get('videos') or 0)
-        times = plan.get('video_times') or []
-        next_time = next((t for t in times if t > datetime.now().strftime('%H:%M')), '—') if planned else 'нет плана'
-        # Count videos per account — only from dedicated folder, no fallback to shared dir
-        account_id = (a.get('author_url') or '').rstrip('/').split('/')[-1]
-        account_dir = root / 'uploaded' / account_id
-        if account_dir.exists():
-            published_all = count_files(account_dir, ('*.mp4', '*.mov'))
-            published_today = count_files(account_dir, ('*.mp4', '*.mov'), today_only=True)
-        else:
-            published_all = 0
-            published_today = 0
-        # Today's progress: use schedule completed if available, else file count
-        today_done = done if planned > 0 else published_today
-        today_plan = planned if planned > 0 else published_today
-        remaining = max(0, today_plan - today_done)
-        total_all += published_all
-        total_today += today_done
-        status = 'ok' if a.get('enabled', True) and not errors else 'warn'
-        accounts.append(metrics_row(
-            f"{a.get('display_name', handle)} {handle}",
-            a.get('author_url', ''),
-            today_plan,
-            published_all,
-            remaining,
-            next_time,
-            status_label(status),
-        ))
-    return {
-        'title': 'Проект Wibes',
-        'columns_first': 'Название канала',
-        'site_column': None,
-        'rows': accounts,
-        'errors': errors,
-        'total_published': total_all,
-        'total_posts_all': total_all + sum(int(r['remaining_today']) for r in accounts if isinstance(r['remaining_today'], int)),
-        'total_posts_today': total_today,
-        'status': status_label('warn' if errors else 'ok'),
     }
 
 def build_creative_block() -> dict[str, Any]:
@@ -816,7 +720,6 @@ def aeza_server_info() -> dict[str, Any]:
 
 def project_blocks() -> dict[str, Any]:
     return {
-        'wibes': build_wibes_block(),
         'creative': build_creative_block(),
         'ritm': build_ritm_block(),
     }
@@ -860,30 +763,6 @@ def render() -> str:
     # Build table rows for each project
     def build_rows() -> str:
         rows = []
-
-        # Wibes section
-        w = blocks['wibes']
-        wrows = w.get('rows', [])
-        rows.append('<tr><td colspan="7" class="sec-hd">🎥 Wibes <span class="sec-cnt">' + str(len(wrows)) + '</span></td></tr>')
-        for r in wrows:
-            plan = r.get('planned_today', 0)
-            published = r.get('published', 0)
-            remaining = r.get('remaining_today', 0)
-            try:
-                plan_int = int(plan) if isinstance(plan, (int, str)) and str(plan).isdigit() else 0
-                rem_int = int(remaining) if isinstance(remaining, (int, str)) and str(remaining).isdigit() else 0
-                done = max(0, plan_int - rem_int)
-                pct = min(100, round(done / plan_int * 100)) if plan_int > 0 else 0
-            except:
-                plan_int = 0; done = 0; pct = 0
-            bar_w = str(pct) + '%'
-            next_t = r.get('next_time', '—')
-            if next_t == 'нет плана':
-                next_t = '—'
-            url = r.get('url', '') or '#'
-            name = esc(r['name'])
-            pub = esc(published)
-            rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f pk" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
 
         # Creative Fabrica section
         c = blocks['creative']
@@ -948,9 +827,6 @@ def render() -> str:
         dot = 'r' if is_err else 'g'
         # Map to Russian labels
         name_map = {
-            'wibes-daily-download': 'Wibes: загрузка',
-            'wibes-morning-report': 'Wibes: отчёт',
-            'wibes-scheduler': 'Wibes: планировщик',
             'WoopSocial Pinterest delivery status watcher': 'Pinterest: статус',
             'S002 Junk Journal Vault WoopSocial status watcher': 'Junk Journal',
             'S004 Planner Printable Studio WoopSocial status watcher': 'Planner Printable',
