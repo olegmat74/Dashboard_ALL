@@ -808,6 +808,7 @@ def render() -> str:
             'S006 StitchVault Studio WoopSocial status watcher — every 1h': 'StitchVault',
             'S007 Kids Activity Vault WoopSocial status watcher — every 6h': 'Kids Activity',
             'S007 Kids Activity Vault WoopSocial status watcher — every 1h': 'Kids Activity',
+            'S008 CozyPattern Vault WoopSocial status watcher — every 1h': 'CozyPattern Vault',
             'YRE Engine': 'Ритм: постинг',
             'YRE Engine v2': 'Ритм: постинг',
             'YRE Hermes Engine': 'Ритм: постинг',
