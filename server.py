@@ -518,6 +518,7 @@ def build_creative_block() -> dict[str, Any]:
         'svg_craft_cut_studio_publish_queue.csv': 'SVG Craft Cut Studio',
         'stitchvault_studio_publish_queue.csv': 'StitchVault Studio',
         'kids_activity_vault_publish_queue.csv': 'Kids Activity Vault',
+        'cozypattern_vault_publish_queue.csv': 'CozyPattern Vault',
     }
     # Pinterest account URLs
     pinterest_urls = {
@@ -526,6 +527,7 @@ def build_creative_block() -> dict[str, Any]:
         'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
         'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
         'kids_activity_vault_publish_queue.csv': 'https://www.pinterest.com/kids_activity_vault/',
+        'cozypattern_vault_publish_queue.csv': 'https://www.pinterest.com/cozypatternvault/',
     }
     rows = []
     errors = total_published = total_all = total_today = total_published_today = 0
