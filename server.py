@@ -855,6 +855,8 @@ body{min-height:100vh}
 .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--b)}
 .hdr h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
 .hdr-r{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--t2)}
+.hdr-btn{color:var(--t2);text-decoration:none;padding:3px 10px;border:1px solid var(--b);border-radius:6px;font-size:11px;font-weight:500;transition:all .15s}
+.hdr-btn:hover{color:var(--accent2);border-color:var(--accent)}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
@@ -895,11 +897,11 @@ tbody tr:hover{background:var(--s2)}
 .pct{font-weight:700;font-size:11px;font-variant-numeric:tabular-nums}
 .foot{margin-top:14px;padding:10px 14px;background:var(--s);border:1px solid var(--b);border-radius:var(--r);display:flex;justify-content:space-between;font-size:10px;color:var(--t3)}
 .foot b{color:var(--t2)}
-@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.st-v{font-size:20px}.hdr{flex-direction:column;align-items:flex-start;gap:6px}.tw{overflow-x:auto}table{min-width:540px}.dash{padding:12px}}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.st-v{font-size:20px}.hdr{flex-direction:column;align-items:flex-start;gap:6px}.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}table{min-width:700px}.dash{padding:12px}}
 </style></head>
 <body>
 <div class="dash" id="d">
-<div class="hdr"><h1>Автоматизация</h1><div class="hdr-r"><span id="clk"></span><span class="dot"></span></div></div>
+<div class="hdr"><h1>Автоматизация</h1><div class="hdr-r"><a href="/ops.html" class="hdr-btn" title="Operations Manual">📋 Ops</a><span id="clk"></span><span class="dot"></span></div></div>
 <div class="stats">
 <div class="st"><div class="st-l">Постов всего</div><div class="st-v a">""" + esc(total_posts_published) + """</div></div>
 <div class="st"><div class="st-l">Проектов</div><div class="st-v g">""" + str(project_count) + """</div></div>
