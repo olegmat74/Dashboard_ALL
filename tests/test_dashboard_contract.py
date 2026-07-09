@@ -21,46 +21,44 @@ class DashboardContractTest(unittest.TestCase):
         mod = load_server()
         cls.html = mod.render()
 
-    def test_title_is_dashboard_of_all_projects(self):
-        self.assertIn("Дашборд всех проектов", self.html)
+    def test_title_is_dashboard(self):
+        self.assertIn("<title>Dashboard</title>", self.html)
 
-    def test_dashboard_is_split_into_project_blocks_and_non_project_blocks(self):
+    def test_kpi_cards_present(self):
         for text in [
-            "Cron",
-            "Проект Creative Fabrica",
-            "Проект Ритм",
-            "Проект Unicaizer",
+            "Постов всего",
+            "Проектов",
+            "Опубликовано сегодня",
+            "Ошибки",
         ]:
             with self.subTest(text=text):
                 self.assertIn(text, self.html)
 
-    def test_project_tables_have_channel_name_column(self):
-        for text in ["Название канала"]:
-            with self.subTest(text=text):
-                self.assertIn(text, self.html)
-
-    def test_cron_table_has_correct_columns(self):
+    def test_project_sections_present(self):
         for text in [
-            "Профиль",
-            "Включен или выключен",
-            "Расписание",
-            "Последний запуск",
-            "Следующий запуск",
-            "Статус",
+            "Creative Fabrica",
+            "Яндекс Ритм",
         ]:
             with self.subTest(text=text):
                 self.assertIn(text, self.html)
 
-    def test_cron_table_does_not_have_old_columns(self):
-        for text in ["Задача", "Ошибка"]:
+    def test_table_columns(self):
+        for text in ["Проект", "Всего", "Сегодня", "План", "Прогресс", "След.", "Сайт", "Статус"]:
+            with self.subTest(text=text):
+                self.assertIn(text, self.html)
+
+    def test_system_pills_present(self):
+        self.assertIn("Диск", self.html)
+        self.assertIn("RAM", self.html)
+        self.assertIn("Сервер", self.html)
+
+    def test_no_font_weight_900(self):
+        self.assertNotIn("font-weight:900", self.html)
+
+    def test_has_server_info(self):
+        self.assertIn("Срок сервера", self.html)
+
+    def test_no_deleted_projects(self):
+        for text in ["Wibes", "Unicaizer"]:
             with self.subTest(text=text):
                 self.assertNotIn(text, self.html)
-
-    def test_no_bold_font(self):
-        self.assertNotIn("font-weight:700", self.html)
-        self.assertNotIn("font-weight:800", self.html)
-        self.assertNotIn("<b>", self.html)
-
-    def test_has_server_info_block(self):
-        self.assertIn("Server1", self.html)
-        self.assertIn("Действует до", self.html)

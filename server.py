@@ -430,73 +430,6 @@ def link_html(url: str, label: str | None = None) -> str:
         return '<span class="muted">—</span>'
     return f'<a href="{esc(url)}" target="_blank" title="{esc(url)}">{esc(label or short_url_label(url))}</a>'
 
-def build_account_rows() -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-
-    # Yandex Ritm accounts
-    rroot = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
-    logins = {'lovi_nahodki': 'olegmat174', 'pokypay_online': 'reginam74'}
-    for name in ['lovi_nahodki', 'pokypay_online']:
-        st_path = rroot / name / 'work' / 'state.json'
-        try:
-            st = json.loads(st_path.read_text())
-        except Exception:
-            st = {'slots': [], 'next_index': 0}
-        slots = st.get('slots') or []
-        idx = int(st.get('next_index') or 0)
-        next_slot = slots[idx] if idx < len(slots) else 'план на день выполнен'
-        rows.append({
-            'project': 'Autopost Ritm', 'account': name, 'platform': 'Яндекс Ритм',
-            'site_url': 'https://yandex.ru/rythm', 'account_url': 'https://yandex.ru/rythm',
-            'content': 'товары Я.Маркет + партнёрские ссылки',
-            'when': f"окно 10:00–22:00; план {len(slots)} постов/день",
-            'published': f'{idx}/{len(slots)}', 'scheduled': str(max(0, len(slots)-idx)),
-            'next': next_slot, 'last': st.get('date', '—'), 'status': 'ok'
-        })
-
-    # Creative Fabrica / Pinterest queues
-    cf = PROFILES / 'autopost_creative_fabrica'
-    queue_names = {
-        'woopsocial_publish_queue.csv': 'Creative Finds Hub',
-        'publish_queue.csv': 'Creative Finds Hub legacy',
-        'junk_journal_vault_publish_queue.csv': 'Junk Journal Vault',
-        'planner_printable_studio_publish_queue.csv': 'Planner Printable Studio',
-        'svg_craft_cut_studio_publish_queue.csv': 'SVG Craft Cut Studio',
-        'stitchvault_studio_publish_queue.csv': 'StitchVault Studio',
-    }
-    seen = set()
-    for q in sorted(list((cf / 'ops').glob('*publish_queue.csv')) + list((cf / 'site_factory').glob('*publish_queue.csv'))):
-        # ops/publish_queue.csv is legacy duplicate of WoopSocial queue; keep table human-readable.
-        if q.name == 'publish_queue.csv' and (cf / 'ops' / 'woopsocial_publish_queue.csv').exists():
-            continue
-        if q.name in seen:
-            continue
-        seen.add(q.name)
-        cr = csv_rows(q)
-        if not cr:
-            continue
-        counts = status_counts(cr)
-        first = cr[0]
-        site_url = first_existing('destination_url', 'destination_page', 'link', row=first)
-        board = first_existing('board', 'board_name', row=first)
-        titles = []
-        for r in cr[:4]:
-            t = first_existing('pin_title', 'title', row=r)
-            if t and t not in titles:
-                titles.append(t)
-        pin_url = next((r.get('pin_url', '') for r in cr if r.get('pin_url')), '')
-        rows.append({
-            'project': 'Creative Fabrica', 'account': queue_names.get(q.name, q.stem), 'platform': 'Pinterest/WoopSocial',
-            'site_url': site_url, 'account_url': pin_url or site_url,
-            'content': board or '; '.join(titles[:2]) or 'Pinterest pins',
-            'when': 'очередь WoopSocial; проверка статуса каждые 6 часов',
-            'published': str(counts['published']), 'scheduled': str(counts['scheduled']),
-            'next': next_from_rows(cr), 'last': last_published_from_rows(cr),
-            'status': 'bad' if counts['error'] else ('ok' if counts['scheduled'] or counts['published'] else 'warn')
-        })
-
-    return rows
-
 def today_str() -> str:
     return datetime.now().date().isoformat()
 
@@ -595,7 +528,7 @@ def build_creative_block() -> dict[str, Any]:
         'kids_activity_vault_publish_queue.csv': 'https://www.pinterest.com/kids_activity_vault/',
     }
     rows = []
-    errors = total_published = total_all = total_today = 0
+    errors = total_published = total_all = total_today = total_published_today = 0
     for q in sorted(list((root / 'ops').glob('*publish_queue.csv')) + list((root / 'site_factory').glob('*publish_queue.csv'))):
         if q.name == 'publish_queue.csv' or q.name not in queue_names:
             continue
@@ -618,14 +551,15 @@ def build_creative_block() -> dict[str, Any]:
                     published_today += 1
                 else:
                     remaining_today += 1
-        errors += err; total_published += published; total_all += len(cr); total_today += planned_today
+        errors += err; total_published += published; total_all += len(cr); total_today += planned_today; total_published_today += published_today
         first = cr[0]
         site_url = first_existing('destination_url', 'destination_page', 'link', row=first)
         account_url = pinterest_urls.get(q.name, site_url)  # Pinterest profile, not pages.dev site
-        rows.append({**metrics_row(queue_names[q.name], account_url, planned_today, published, remaining_today, next_from_rows(cr), status_label('bad' if err else 'ok')), 'site_url': site_url})
+        rows.append({**metrics_row(queue_names[q.name], account_url, planned_today, published, remaining_today, next_from_rows(cr), status_label('bad' if err else 'ok')), 'site_url': site_url, 'published_today': published_today, 'errors': err})
     return {
         'title': 'Проект Creative Fabrica', 'columns_first': 'Pinterest аккаунт', 'site_column': 'Сайт аккаунта', 'rows': rows,
         'errors': errors, 'total_published': total_published, 'total_posts_all': total_all, 'total_posts_today': total_today,
+        'total_published_today': total_published_today,
         'status': status_label('bad' if errors else 'ok')
     }
 
@@ -638,6 +572,7 @@ def build_ritm_block() -> dict[str, Any]:
     }
     rows = []
     total_published = total_today = 0
+    total_published_today_ritm = 0
     for name in ['lovi_nahodki', 'pokypay_online']:
         try: st = json.loads((root / name / 'work' / 'state.json').read_text())
         except Exception: st = {}
@@ -658,13 +593,18 @@ def build_ritm_block() -> dict[str, Any]:
             next_time = f'{next_time} (план {plan_date})' if idx < len(slots) else f'устарел ({plan_date})'
         total_published += len(used)
         total_today += done_today
+        total_published_today_ritm += done_today
         profile = ritm_profiles.get(name, {})
         display_name = f"{name} ({profile.get('login', '')})" if profile.get('login') else name
         status = 'ok' if is_today else 'warn'
         rows.append(metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned, len(used), remaining, next_time, status_label(status)))
+        # Attach extra fields for status column
+        rows[-1]['is_today'] = is_today
+        rows[-1]['done_today'] = done_today
     return {
         'title': 'Проект Ритм', 'columns_first': 'Название канала', 'site_column': None, 'rows': rows,
         'errors': 0, 'total_published': total_published, 'total_posts_all': total_published, 'total_posts_today': total_today,
+        'total_published_today': total_published_today_ritm,
         'status': status_label('warn' if any('устарел' in str(r.get('next_time', '')) for r in rows) else 'ok')
     }
 
@@ -756,7 +696,7 @@ def render() -> str:
     cron_rows = cron_all_rows()
 
     total_posts_published = sum(b.get('total_published', 0) for k, b in blocks.items())
-    total_posts_today = sum(b.get('total_posts_today', 0) for k, b in blocks.items())
+    total_posts_today = sum(b.get('total_published_today', 0) for k, b in blocks.items())
     total_errors = sum(b.get('errors', 0) for k, b in blocks.items())
     project_count = sum(1 for k, b in blocks.items() if b.get('rows'))
 
@@ -764,10 +704,37 @@ def render() -> str:
     def build_rows() -> str:
         rows = []
 
+        # Helper: status badge for an account row
+        def account_status(r: dict) -> str:
+            pub_today = int(r.get('published_today', 0) or 0)
+            errs = int(r.get('errors', 0) or 0)
+            rem = int(r.get('remaining_today', 0) or 0)
+            is_today = r.get('is_today', None)
+            done_today = int(r.get('done_today', 0) or 0)
+
+            # Ritm accounts
+            if is_today is not None:
+                if not is_today:
+                    return '<span class="badge s-warn">⚠ Устарел</span>'
+                if done_today > 0:
+                    return '<span class="badge s-ok">✅ Активен</span>'
+                if rem > 0:
+                    return '<span class="badge s-none">⏳ Ожидает</span>'
+                return '<span class="badge s-ok">✅ Завершён</span>'
+
+            # CF / Pinterest accounts
+            if errs > 0:
+                return '<span class="badge s-bad">❌ Ошибка</span>'
+            if pub_today > 0:
+                return '<span class="badge s-ok">✅ Публикуется</span>'
+            if rem > 0:
+                return '<span class="badge s-none">⏳ Ожидает</span>'
+            return '<span class="muted">—</span>'
+
         # Creative Fabrica section
         c = blocks['creative']
         crows = c.get('rows', [])
-        rows.append('<tr><td colspan="7" class="sec-hd">📌 Pinterest / Creative Fabrica <span class="sec-cnt">' + str(len(crows)) + '</span></td></tr>')
+        rows.append('<tr><td colspan="9" class="sec-hd">📌 Pinterest / Creative Fabrica <span class="sec-cnt">' + str(len(crows)) + '</span></td></tr>')
         for r in crows:
             plan = r.get('planned_today', 0)
             published = r.get('published', 0)
@@ -781,15 +748,18 @@ def render() -> str:
                 plan_int = 0; done = 0; pct = 0
             bar_w = str(pct) + '%'
             next_t = r.get('next_time', '—')
-            url = r.get('url', '') or '#'
+            pinterest_url = r.get('url', '') or '#'
+            site_url = r.get('site_url', '') or ''
             name = esc(r['name'])
             pub = esc(published)
-            rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f pu" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
+            site_link = '<a href="' + esc(site_url) + '" target="_blank" class="site-link" title="' + esc(site_url) + '">🔗</a>' if site_url else '<span class="muted">—</span>'
+            st = account_status(r)
+            rows.append('<tr><td><a href="' + esc(pinterest_url) + '" target="_blank" class="nm">' + name + '</a></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f pu" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td><td class="cn">' + site_link + '</td><td class="cn">' + st + '</td></tr>')
 
         # Ritm section
         ritm = blocks['ritm']
         rrows = ritm.get('rows', [])
-        rows.append('<tr><td colspan="7" class="sec-hd">🛒 Яндекс Ритм <span class="sec-cnt">' + str(len(rrows)) + '</span></td></tr>')
+        rows.append('<tr><td colspan="9" class="sec-hd">🛒 Яндекс Ритм <span class="sec-cnt">' + str(len(rrows)) + '</span></td></tr>')
         for r in rrows:
             plan = r.get('planned_today', 0)
             published = r.get('published', 0)
@@ -805,10 +775,11 @@ def render() -> str:
             next_t = str(r.get('next_time', '—'))
             if next_t == 'план устарел':
                 next_t = 'устарел'
-            url = r.get('url', '') or '#'
+            ritm_url = r.get('url', '') or '#'
             name = esc(r['name'])
             pub = esc(published)
-            rows.append('<tr onclick="window.open(\'' + url + '\',\'_blank\')"><td><span class="nm">' + name + '</span></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f ac" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td></tr>')
+            st = account_status(r)
+            rows.append('<tr><td><a href="' + esc(ritm_url) + '" target="_blank" class="nm">' + name + '</a></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f ac" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td><td class="cn"><span class="muted">—</span></td><td class="cn">' + st + '</td></tr>')
 
         return '\n'.join(rows)
 
@@ -832,9 +803,14 @@ def render() -> str:
             'S004 Planner Printable Studio WoopSocial status watcher': 'Planner Printable',
             'S005 SVG Craft Cut Studio WoopSocial status watcher': 'SVG Craft',
             'S006 StitchVault Studio WoopSocial status watcher — every 6h': 'StitchVault',
+            'S006 StitchVault Studio WoopSocial status watcher — every 1h': 'StitchVault',
+            'S007 Kids Activity Vault WoopSocial status watcher — every 6h': 'Kids Activity',
+            'S007 Kids Activity Vault WoopSocial status watcher — every 1h': 'Kids Activity',
             'YRE Engine': 'Ритм: постинг',
             'YRE Engine v2': 'Ритм: постинг',
-            'daily-unicaizer-seo-3-articles': 'Unicaizer: SEO',
+            'YRE Hermes Engine': 'Ритм: постинг',
+            '📊 Queue Guardian + 🎨 Pin Factory — daily queue check & auto-refill': 'CF: наполнение',
+            '📈 Daily Analyst — end-of-day stats, anomalies, and recommendations': 'CF: аналитика',
         }
         label = name_map.get(name, name)
         # Translate schedule to Russian
@@ -843,6 +819,8 @@ def render() -> str:
             sched_ru = 'каждые 30 мин'
         elif sched == 'every 360m':
             sched_ru = 'каждые 6 часов'
+        elif sched == 'every 60m':
+            sched_ru = 'каждый час'
         elif sched == '0 4 * * *':
             sched_ru = 'ежедневно 09:00 ЕКБ'
         elif sched == '0 9 * * *':
@@ -895,11 +873,19 @@ table{width:100%;border-collapse:collapse}
 thead th{text-align:left;padding:7px 10px;color:var(--t3);font-size:9px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;background:var(--s2);border-bottom:1px solid var(--b)}
 tbody td{padding:7px 10px;border-bottom:1px solid var(--b);font-size:12px;vertical-align:middle;white-space:nowrap}
 tbody tr:last-child td{border-bottom:none}
-tbody tr{transition:background .12s;cursor:pointer}
+tbody tr{transition:background .12s}
 tbody tr:hover{background:var(--s2)}
 .sec-hd{background:var(--s2)!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase;letter-spacing:.07em;color:var(--t2)!important;padding:8px 10px!important;cursor:default!important}
 .sec-cnt{color:var(--t3);font-weight:400;margin-left:4px}
-.nm{font-weight:600}
+.nm{font-weight:600;color:var(--accent2);text-decoration:none}
+.nm:hover{text-decoration:underline}
+.site-link{color:var(--t2);text-decoration:none;font-size:13px}
+.site-link:hover{color:var(--accent2)}
+.badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.s-ok{background:#16653433;color:var(--green)}
+.s-warn{background:#854d0e33;color:var(--orange)}
+.s-bad{background:#7f1d1d33;color:var(--red)}
+.s-none{background:var(--s3);color:var(--t2)}
 .cn{font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
 .bar{width:60px;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle}
 .bar-f{height:100%;border-radius:3px}
@@ -917,13 +903,13 @@ tbody tr:hover{background:var(--s2)}
 <div class="stats">
 <div class="st"><div class="st-l">Постов всего</div><div class="st-v a">""" + esc(total_posts_published) + """</div></div>
 <div class="st"><div class="st-l">Проектов</div><div class="st-v g">""" + str(project_count) + """</div></div>
-<div class="st"><div class="st-l">Сегодня</div><div class="st-v p">""" + esc(total_posts_today) + """</div></div>
+<div class="st"><div class="st-l">Опубликовано сегодня</div><div class="st-v p">""" + esc(total_posts_today) + """</div></div>
 <div class="st"><div class="st-l">Ошибки</div><div class="st-v """ + ('o' if total_errors else 'g') + '">' + str(total_errors) + """</div></div>
 </div>
 <div class="sys">""" + sys_pills + """</div>
 <div class="sec"><div class="tw">
 <table>
-<thead><tr><th>Проект</th><th style="text-align:center">Всего</th><th style="text-align:center">Сегодня</th><th style="text-align:center">План</th><th>Прогресс</th><th style="text-align:right">%</th><th style="text-align:center">След.</th></tr></thead>
+<thead><tr><th>Проект</th><th style="text-align:center">Всего</th><th style="text-align:center">Сегодня</th><th style="text-align:center">План</th><th>Прогресс</th><th style="text-align:right">%</th><th style="text-align:center">След.</th><th style="text-align:center">Сайт</th><th style="text-align:center">Статус</th></tr></thead>
 <tbody>
 """ + build_rows() + """
 </tbody>
@@ -1041,7 +1027,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/refresh':
             import subprocess
             try:
-                r = subprocess.run(['python3', str(DASH_ROOT / 'update_github_pages.py')], cwd=DASH_ROOT, capture_output=True, text=True, timeout=60)
+                r = subprocess.run(['python3', str(DASH_ROOT / 'deploy_cloudflare.py')], cwd=DASH_ROOT, capture_output=True, text=True, timeout=120)
                 ok = r.returncode == 0 or 'no changes' in r.stdout
             except Exception:
                 ok = False
