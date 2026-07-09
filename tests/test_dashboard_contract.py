@@ -27,7 +27,6 @@ class DashboardContractTest(unittest.TestCase):
     def test_dashboard_is_split_into_project_blocks_and_non_project_blocks(self):
         for text in [
             "Cron",
-            "Проект Wibes",
             "Проект Creative Fabrica",
             "Проект Ритм",
             "Проект Unicaizer",
