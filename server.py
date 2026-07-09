@@ -581,18 +581,18 @@ def build_creative_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_creative_fabrica'
     queue_names = {
         'woopsocial_publish_queue.csv': 'Creative Finds Hub',
-        'junk_journal_vault_publish_queue.csv': 'Junk Journal Vault',
         'planner_printable_studio_publish_queue.csv': 'Planner Printable Studio',
         'svg_craft_cut_studio_publish_queue.csv': 'SVG Craft Cut Studio',
         'stitchvault_studio_publish_queue.csv': 'StitchVault Studio',
+        'kids_activity_vault_publish_queue.csv': 'Kids Activity Vault',
     }
-    # Pinterest account URLs (from dashboard_data.json)
+    # Pinterest account URLs
     pinterest_urls = {
         'woopsocial_publish_queue.csv': 'https://www.pinterest.com/hit_market/',
-        'junk_journal_vault_publish_queue.csv': 'https://www.pinterest.com/printablejournalideas/',
         'planner_printable_studio_publish_queue.csv': 'https://www.pinterest.com/planner_printable_studio/',
         'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
         'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
+        'kids_activity_vault_publish_queue.csv': 'https://www.pinterest.com/kids_activity_vault/',
     }
     rows = []
     errors = total_published = total_all = total_today = 0
