@@ -577,7 +577,7 @@ def build_ritm_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
     # business_id → profile URL mapping from core/config.py
     ritm_profiles = {
-        'lovi_nahodki': {'url': 'https://yandex.ru/rythm/profile/12878846631190760930', 'login': 'olegmat174', 'display': 'Лови Находку'},
+        'lovi_nahodki': {'url': 'https://yandex.ru/rythm/profile/@019a93587e607462956018e5005b8897', 'login': 'olegmat174', 'display': 'Лови Находку'},
         'pokypay_online': {'url': 'https://yandex.ru/rythm/profile/@019b899e175c7739bf813902209cccb8', 'login': 'reginam74', 'display': 'Покупаю ONLINE'},
     }
     rows = []
