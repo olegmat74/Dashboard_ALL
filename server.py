@@ -520,6 +520,9 @@ def build_creative_block() -> dict[str, Any]:
         'stitchvault_studio_publish_queue.csv': 'StitchVault Studio',
         'kids_activity_vault_publish_queue.csv': 'Kids Activity Vault',
         'cozypattern_vault_publish_queue.csv': 'CozyPattern Vault',
+        'mockup_seller_hub_publish_queue.csv': 'Mockup Seller Hub',
+        'watercolorbloom_studio_publish_queue.csv': 'WatercolorBloom Studio',
+        'procreate_brush_lab_publish_queue.csv': 'Procreate Brush Lab',
     }
     # Pinterest account URLs
     pinterest_urls = {
@@ -530,6 +533,9 @@ def build_creative_block() -> dict[str, Any]:
         'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
         'kids_activity_vault_publish_queue.csv': 'https://www.pinterest.com/kids_activity_vault/',
         'cozypattern_vault_publish_queue.csv': 'https://www.pinterest.com/cozypatternvault/',
+        'mockup_seller_hub_publish_queue.csv': 'https://www.pinterest.com/mockupsellerhub/',
+        'watercolorbloom_studio_publish_queue.csv': 'https://www.pinterest.com/watercolor_bloom/',
+        'procreate_brush_lab_publish_queue.csv': 'https://www.pinterest.com/brushlabprocreate/',
     }
     rows = []
     errors = total_published = total_all = total_today = total_published_today = 0
