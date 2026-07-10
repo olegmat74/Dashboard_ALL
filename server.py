@@ -524,6 +524,7 @@ def build_creative_block() -> dict[str, Any]:
         'mockup_seller_hub_publish_queue.csv': 'Mockup Seller Hub',
         'watercolorbloom_studio_publish_queue.csv': 'WatercolorBloom Studio',
         'procreate_brush_lab_publish_queue.csv': 'Procreate Brush Lab',
+        'creator_template_atelier_publish_queue.csv': 'Creator Template Atelier',
     }
     # Pinterest account URLs
     pinterest_urls = {
@@ -537,6 +538,21 @@ def build_creative_block() -> dict[str, Any]:
         'mockup_seller_hub_publish_queue.csv': 'https://www.pinterest.com/mockupsellerhub/',
         'watercolorbloom_studio_publish_queue.csv': 'https://www.pinterest.com/watercolor_bloom/',
         'procreate_brush_lab_publish_queue.csv': 'https://www.pinterest.com/brushlabprocreate/',
+        'creator_template_atelier_publish_queue.csv': 'https://www.pinterest.com/templateatelierco1/',
+    }
+    # queue → S-account code
+    queue_scode = {
+        'woopsocial_publish_queue.csv': 'S001',
+        'junk_journal_vault_publish_queue.csv': 'S002',
+        'planner_printable_studio_publish_queue.csv': 'S004',
+        'svg_craft_cut_studio_publish_queue.csv': 'S005',
+        'stitchvault_studio_publish_queue.csv': 'S006',
+        'kids_activity_vault_publish_queue.csv': 'S007',
+        'cozypattern_vault_publish_queue.csv': 'S008',
+        'mockup_seller_hub_publish_queue.csv': 'S003',
+        'watercolorbloom_studio_publish_queue.csv': 'S009',
+        'procreate_brush_lab_publish_queue.csv': 'S010',
+        'creator_template_atelier_publish_queue.csv': 'S011',
     }
     rows = []
     errors = total_published = total_all = total_today = total_published_today = 0
@@ -566,7 +582,9 @@ def build_creative_block() -> dict[str, Any]:
         first = cr[0]
         site_url = first_existing('destination_url', 'destination_page', 'link', row=first)
         account_url = pinterest_urls.get(q.name, site_url)  # Pinterest profile, not pages.dev site
-        rows.append({**metrics_row(queue_names[q.name], account_url, planned_today, published, remaining_today, next_from_rows(cr), status_label('bad' if err else 'ok')), 'site_url': site_url, 'published_today': published_today, 'errors': err})
+        scode = queue_scode.get(q.name, '')
+        display_name = f'{scode} · {queue_names[q.name]}' if scode else queue_names[q.name]
+        rows.append({**metrics_row(display_name, account_url, planned_today, published, remaining_today, next_from_rows(cr), status_label('bad' if err else 'ok')), 'site_url': site_url, 'published_today': published_today, 'errors': err})
     return {
         'title': 'Проект Creative Fabrica', 'columns_first': 'Pinterest аккаунт', 'site_column': 'Сайт аккаунта', 'rows': rows,
         'errors': errors, 'total_published': total_published, 'total_posts_all': total_all, 'total_posts_today': total_today,
