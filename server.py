@@ -556,8 +556,11 @@ def build_creative_block() -> dict[str, Any]:
     }
     rows = []
     errors = total_published = total_all = total_today = total_published_today = 0
-    for q in sorted(list((root / 'ops').glob('*publish_queue.csv')) + list((root / 'site_factory').glob('*publish_queue.csv'))):
-        if q.name == 'publish_queue.csv' or q.name not in queue_names:
+    # Iterate in S-code order
+    ordered = [q for q in (list((root / 'ops').glob('*publish_queue.csv')) + list((root / 'site_factory').glob('*publish_queue.csv'))) if q.name in queue_scode]
+    ordered.sort(key=lambda q: queue_scode[q.name])
+    for q in ordered:
+        if q.name not in queue_names:
             continue
         cr = csv_rows(q)
         if not cr:
