@@ -532,7 +532,7 @@ def build_creative_block() -> dict[str, Any]:
         'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
         'stitchvault_studio_publish_queue.csv': 'https://www.pinterest.com/StitchVaultStudio/',
         'kids_activity_vault_publish_queue.csv': 'https://www.pinterest.com/kids_activity_vault/',
-        'cozypattern_vault_publish_queue.csv': 'https://www.pinterest.com/cozypatternvault/',
+        'cozypattern_vault_publish_queue.csv': 'https://www.pinterest.com/user_agovnreivo/',
         'mockup_seller_hub_publish_queue.csv': 'https://www.pinterest.com/mockupsellerhub/',
         'watercolorbloom_studio_publish_queue.csv': 'https://www.pinterest.com/watercolor_bloom/',
         'procreate_brush_lab_publish_queue.csv': 'https://www.pinterest.com/brushlabprocreate/',
