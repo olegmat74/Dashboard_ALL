@@ -25,6 +25,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
+import openpyxl
 
 HOME = Path('/home/hermes')
 PROFILES = HOME / '.hermes' / 'profiles'
@@ -573,6 +574,34 @@ def build_creative_block() -> dict[str, Any]:
         'status': status_label('bad' if errors else 'ok')
     }
 
+def ritm_real_stats(name: str) -> dict[str, int]:
+    """Read real published-post counts from the latest Yandex.Rythm xlsx export.
+
+    Returns {'published': int, 'moderation': int, 'total': int}. Falls back to
+    scanning all exports if the newest one is empty.
+    """
+    cache = PROFILES / 'autopost_ritm' / 'workspace' / 'cache' / 'documents'
+    files = sorted(cache.glob(f'{name}_posts_stat_*.xlsx'), reverse=True)
+    empty = {'published': 0, 'moderation': 0, 'total': 0}
+    if not files:
+        return empty
+    for f in files:
+        try:
+            wb = openpyxl.load_workbook(f, read_only=True)
+            ws = wb.active
+            rows = list(ws.iter_rows(values_only=True))
+            data = [r for r in rows[6:] if r and r[0] is not None]
+            if not data:
+                continue
+            published = sum(1 for r in data if str(r[1]).strip() == 'Опубликован')
+            moderation = sum(1 for r in data if str(r[1]).strip() == 'На модерации')
+            wb.close()
+            return {'published': published, 'moderation': moderation, 'total': len(data)}
+        except Exception:
+            continue
+    return empty
+
+
 def build_ritm_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
     # business_id → profile URL mapping from core/config.py
@@ -588,6 +617,7 @@ def build_ritm_block() -> dict[str, Any]:
         except Exception: st = {}
         try: used = json.loads((root / name / 'work' / 'used_posts.json').read_text())
         except Exception: used = []
+        real = ritm_real_stats(name)
         slots = st.get('slots') or []
         idx = int(st.get('next_index') or 0)
         plan_date = st.get('date', '—')
@@ -601,13 +631,16 @@ def build_ritm_block() -> dict[str, Any]:
         # Note if plan is stale
         if not is_today:
             next_time = f'{next_time} (план {plan_date})' if idx < len(slots) else f'устарел ({plan_date})'
-        total_published += len(used)
+        # Real published count from Yandex.Rythm xlsx export (fallback to local used_posts.json)
+        published = real['published'] if real['total'] else len(used)
+        total_published += published
         total_today += done_today
         total_published_today_ritm += done_today
         profile = ritm_profiles.get(name, {})
         display_name = profile.get('display') or (f"{name} ({profile.get('login', '')})" if profile.get('login') else name)
         status = 'ok' if is_today else 'warn'
-        rows.append(metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned, len(used), remaining, next_time, status_label(status)))
+        note = f" (+{real['moderation']} на модерации)" if real['moderation'] else ''
+        rows.append({**metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned, published, remaining, next_time, status_label(status)), 'note': note})
         # Attach extra fields for status column
         rows[-1]['is_today'] = is_today
         rows[-1]['done_today'] = done_today
@@ -787,7 +820,8 @@ def render() -> str:
                 next_t = 'устарел'
             ritm_url = r.get('url', '') or '#'
             name = esc(r['name'])
-            pub = esc(published)
+            pub_note = r.get('note', '')
+            pub = esc(published) + (f'<span class="muted"> {esc(pub_note)}</span>' if pub_note else '')
             st = account_status(r)
             rows.append('<tr><td><a href="' + esc(ritm_url) + '" target="_blank" class="nm">' + name + '</a></td><td class="cn">' + pub + '</td><td class="cn">' + str(done) + '/' + str(plan_int) + '</td><td class="cn">' + str(plan_int) + '</td><td><div class="bar"><div class="bar-f ac" style="width:' + bar_w + '"></div></div></td><td class="pct">' + str(pct) + '%</td><td class="cn">' + esc(next_t) + '</td><td class="cn"><span class="muted">—</span></td><td class="cn">' + st + '</td></tr>')
 
