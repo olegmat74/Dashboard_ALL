@@ -577,8 +577,8 @@ def build_ritm_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_ritm' / 'workspace' / 'ritm'
     # business_id → profile URL mapping from core/config.py
     ritm_profiles = {
-        'lovi_nahodki': {'url': 'https://yandex.ru/rythm/profile/12878846631190760930', 'login': 'olegmat174'},
-        'pokypay_online': {'url': 'https://yandex.ru/rythm/profile/17608531351218553275', 'login': 'reginam74'},
+        'lovi_nahodki': {'url': 'https://yandex.ru/rythm/profile/12878846631190760930', 'login': 'olegmat174', 'display': 'Лови Находку'},
+        'pokypay_online': {'url': 'https://yandex.ru/rythm/profile/@019b899e175c7739bf813902209cccb8', 'login': 'reginam74', 'display': 'Покупаю ONLINE'},
     }
     rows = []
     total_published = total_today = 0
@@ -605,7 +605,7 @@ def build_ritm_block() -> dict[str, Any]:
         total_today += done_today
         total_published_today_ritm += done_today
         profile = ritm_profiles.get(name, {})
-        display_name = f"{name} ({profile.get('login', '')})" if profile.get('login') else name
+        display_name = profile.get('display') or (f"{name} ({profile.get('login', '')})" if profile.get('login') else name)
         status = 'ok' if is_today else 'warn'
         rows.append(metrics_row(display_name, profile.get('url', 'https://yandex.ru/rythm'), planned, len(used), remaining, next_time, status_label(status)))
         # Attach extra fields for status column
