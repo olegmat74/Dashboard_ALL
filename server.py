@@ -972,8 +972,8 @@ tbody tr:hover{background:var(--s2)}
 <div class="dash" id="d">
 <div class="hdr"><h1>Автоматизация</h1><div class="hdr-r"><a href="/ops.html" class="hdr-btn" title="Operations Manual">📋 Ops</a><span id="clk"></span><span class="dot"></span></div></div>
 <div class="stats">
-<div class="st"><div class="st-l">Постов · Пинтерест</div><div class="st-v a">" + esc(pin_posts_published) + "</div></div>
-<div class="st"><div class="st-l">Постов · Ритм</div><div class="st-v a">" + esc(ritm_posts_published) + "</div></div>
+<div class="st"><div class="st-l">Постов · Пинтерест</div><div class="st-v a">""" + esc(pin_posts_published) + """</div></div>
+<div class="st"><div class="st-l">Постов · Ритм</div><div class="st-v a">""" + esc(ritm_posts_published) + """</div></div>
 <div class="st"><div class="st-l">Проектов</div><div class="st-v g">""" + str(project_count) + """</div></div>
 <div class="st"><div class="st-l">Опубликовано сегодня</div><div class="st-v p">""" + esc(total_posts_today) + """</div></div>
 <div class="st"><div class="st-l">Ошибки</div><div class="st-v """ + ('o' if total_errors else 'g') + '">' + str(total_errors) + """</div></div>
