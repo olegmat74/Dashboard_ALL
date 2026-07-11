@@ -514,7 +514,7 @@ def metrics_row(name: str, url: str, planned: int | str, published: int | str, r
 def build_creative_block() -> dict[str, Any]:
     root = PROFILES / 'autopost_creative_fabrica'
     queue_names = {
-        'woopsocial_publish_queue.csv': 'Creative Finds Hub',
+        'creative_finds_hub_publish_queue.csv': 'Creative Finds Hub',
         'junk_journal_vault_publish_queue.csv': 'Junk Journal Vault',
         'planner_printable_studio_publish_queue.csv': 'Planner Printable Studio',
         'svg_craft_cut_studio_publish_queue.csv': 'SVG Craft Cut Studio',
@@ -525,10 +525,12 @@ def build_creative_block() -> dict[str, Any]:
         'watercolorbloom_studio_publish_queue.csv': 'WatercolorBloom Studio',
         'procreate_brush_lab_publish_queue.csv': 'Procreate Brush Lab',
         'creator_template_atelier_publish_queue.csv': 'Creator Template Atelier',
+        'font_pairing_studio_publish_queue.csv': 'Font Pairing Studio',
+        'pattern_paper_index_publish_queue.csv': 'Pattern Paper Index',
     }
     # Pinterest account URLs
     pinterest_urls = {
-        'woopsocial_publish_queue.csv': 'https://www.pinterest.com/digitalcraftfinds/',
+        'creative_finds_hub_publish_queue.csv': 'https://www.pinterest.com/digitalcraftfinds/',
         'junk_journal_vault_publish_queue.csv': 'https://www.pinterest.com/printablejournalideas/',
         'planner_printable_studio_publish_queue.csv': 'https://www.pinterest.com/planner_printable_studio/',
         'svg_craft_cut_studio_publish_queue.csv': 'https://www.pinterest.com/svg_craft_cut_studio/',
@@ -539,10 +541,12 @@ def build_creative_block() -> dict[str, Any]:
         'watercolorbloom_studio_publish_queue.csv': 'https://www.pinterest.com/watercolor_bloom/',
         'procreate_brush_lab_publish_queue.csv': 'https://www.pinterest.com/brushlabprocreate/',
         'creator_template_atelier_publish_queue.csv': 'https://www.pinterest.com/templateatelierco1/',
+        'font_pairing_studio_publish_queue.csv': 'https://www.pinterest.com/fontpairingstudio/',
+        'pattern_paper_index_publish_queue.csv': 'https://www.pinterest.com/patternpaperindex/',
     }
     # queue → S-account code
     queue_scode = {
-        'woopsocial_publish_queue.csv': 'S001',
+        'creative_finds_hub_publish_queue.csv': 'S001',
         'junk_journal_vault_publish_queue.csv': 'S002',
         'planner_printable_studio_publish_queue.csv': 'S004',
         'svg_craft_cut_studio_publish_queue.csv': 'S005',
@@ -553,6 +557,8 @@ def build_creative_block() -> dict[str, Any]:
         'watercolorbloom_studio_publish_queue.csv': 'S009',
         'procreate_brush_lab_publish_queue.csv': 'S010',
         'creator_template_atelier_publish_queue.csv': 'S011',
+        'font_pairing_studio_publish_queue.csv': 'S012',
+        'pattern_paper_index_publish_queue.csv': 'S013',
     }
     rows = []
     errors = total_published = total_all = total_today = total_published_today = 0
